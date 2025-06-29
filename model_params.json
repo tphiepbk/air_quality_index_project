@@ -1,0 +1,19 @@
+{
+    "general": {
+        "model_info_dir": "/le_thanh_van_118/workspace/hiep_workspace/model_info",
+        "model_checkpoints_dir": "/le_thanh_van_118/workspace/hiep_workspace/model_checkpoints"
+    },
+    "prediction": {
+        "n_past": 7,
+        "n_future": 1,
+        "epochs": 20,
+        "batch_size": 128
+    },
+    "reduction": {
+        "n_past": 7,
+        "n_future": 1,
+        "epochs": 20,
+        "batch_size": 128,
+        "min_number_of_features": 18
+    }
+}
