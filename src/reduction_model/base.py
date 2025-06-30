@@ -38,9 +38,9 @@ from keras.losses import MeanAbsoluteError, MeanSquaredError
 import keras.backend as K
 
 from src.prediction_model.lstm import reframePastFuture, splitTrainTestTimeSeries
-from src.config_reader import ConfigurationReader
+from src.config_reader.config_reader import ConfigurationReader
 
-global_conf = ConfigurationReader("/le_thanh_van_118/workspace/hiep_workspace/model_params.json")
+conf = ConfigurationReader("/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/model_params.json")
 
 # ==========================================================================================
 

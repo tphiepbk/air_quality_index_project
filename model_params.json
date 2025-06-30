@@ -1,7 +1,9 @@
 {
     "general": {
+        "dataset_dir": "/le_thanh_van_118/workspace/hiep_workspace/dataset/MPAir.csv",
         "model_info_dir": "/le_thanh_van_118/workspace/hiep_workspace/model_info",
-        "model_checkpoints_dir": "/le_thanh_van_118/workspace/hiep_workspace/model_checkpoints"
+        "model_checkpoints_dir": "/le_thanh_van_118/workspace/hiep_workspace/model_checkpoints",
+        "data_by_location_dir": "/le_thanh_van_118/workspace/hiep_workspace/data_by_location"
     },
     "prediction": {
         "n_past": 7,
