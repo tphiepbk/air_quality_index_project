@@ -41,7 +41,7 @@ import keras.backend as K
 from src.time_series_utils.time_series_utils import splitTrainTestTimeSeries, reframePastFuture
 from src.config_reader.config_reader import ConfigurationReader
 
-conf = ConfigurationReader("/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/model_params.json")
+conf = ConfigurationReader("/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/model_params.json").data
 
 # ==========================================================================================
 
@@ -80,7 +80,7 @@ def predictLSTM(X, y, n_past=1, n_future=1, epochs=10, batch_size=64, model_name
   X_train_reframed, X_test_reframed, y_train_reframed, y_test_reframed = splitTrainTestTimeSeries(X_reframed, y_reframed, test_percentage=0.2)
 
   # Define model checkpoint
-  checkpoint = ModelCheckpoint(filepath=f'{global_conf.general["model_checkpoints_dir"]}/{model_name}.keras', save_best_only=True)
+  checkpoint = ModelCheckpoint(filepath=f'{conf["workspace"]["model_checkpoints_dir"]}/{model_name}.keras', save_best_only=True)
 
   # Define LSTM model
   # Input shape: (n_past, n_features)
@@ -100,7 +100,7 @@ def predictLSTM(X, y, n_past=1, n_future=1, epochs=10, batch_size=64, model_name
   model.compile(loss=MeanAbsoluteError(), optimizer=Adam(learning_rate=0.001))
   model.name = model_name
   print(model.summary()) if verbose else None
-  plot_model(model, to_file=f'{global_conf.general["model_info_dir"]}/{model_name}.png', show_shapes=True, dpi=100)
+  plot_model(model, to_file=f'{conf["workspace"]["model_info_dir"]}/{model_name}.png', show_shapes=True, dpi=100)
 
   # Fit model
   if verbose:

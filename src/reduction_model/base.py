@@ -37,16 +37,16 @@ from keras.losses import MeanAbsoluteError
 from keras.losses import MeanAbsoluteError, MeanSquaredError
 import keras.backend as K
 
-from src.prediction_model.lstm import reframePastFuture, splitTrainTestTimeSeries
+from src.time_series_utils.time_series_utils import splitTrainTestTimeSeries, reframePastFuture
 from src.config_reader.config_reader import ConfigurationReader
 
-conf = ConfigurationReader("/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/model_params.json")
+conf = ConfigurationReader("/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/model_params.json").data
 
 # ==========================================================================================
 
 # Base class for every other reduction model
 class Seq2SeqReductionModel(object):
-    def __init__(self, X_scaled, test_percentage=0.2, latent_dim=8, epochs=10, batch_size=10, n_past=0, n_future=0, verbose=0, model_name=None):
+    def __init__(self, X_scaled, test_percentage=0.2, latent_dim=8, epochs=10, batch_size=10, n_past=0, n_future=0, verbose=0, model_name=None, class_name=None):
         # Hyper parameters
         self._verbose = verbose
         self._test_percentage = test_percentage
@@ -55,6 +55,11 @@ class Seq2SeqReductionModel(object):
         self._batch_size = batch_size
         self._n_past = n_past
         self._n_future = n_future
+        # Metadata of the object
+        if class_name:
+            self._class_name = class_name
+        else:
+            self._class_name = "Seq2SeqReductionModel"
         # Data
         self._X_scaled = X_scaled
         self._X_scaled_reframed = None
@@ -79,12 +84,12 @@ class Seq2SeqReductionModel(object):
     # Get model information
     def get_model_info(self):
         print(self._model.summary())
-        plot_model(self._model, to_file=f'{global_conf.general["model_info_dir"]}/{self._model.name}.png', show_shapes=True, dpi=100)
+        plot_model(self._model, to_file=f'{conf["workspace"]["model_info_dir"]}/{self._model.name}.png', show_shapes=True, dpi=100)
 
     # Get encoder model information
     def get_encoder_model_info(self):
         print(self._encoder_model.summary())
-        plot_model(self._encoder_model, to_file=f'{global_conf.general["model_info_dir"]}/{self._encoder_model.name}.png', show_shapes=True, dpi=100)
+        plot_model(self._encoder_model, to_file=f'{conf["workspace"]["model_info_dir"]}/{self._encoder_model.name}.png', show_shapes=True, dpi=100)
 
     # Main execution method
     def execute(self):

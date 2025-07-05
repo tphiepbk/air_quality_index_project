@@ -2,15 +2,7 @@
 
 import json
 
-# ==========================================================================================
-
-# Singleton metaclass
-class Singleton(type):
-    _instances = {}
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
+from src.common.singleton import Singleton
 
 # ==========================================================================================
 
@@ -30,15 +22,7 @@ class ConfigurationReader(metaclass=Singleton):
 
     def __str__(self):
         return json.dumps(self._data, indent=4)
-    
-    @property
-    def general(self):
-        return self._data["general"]
 
     @property
-    def prediction(self):
-        return self._data["prediction"]
-
-    @property
-    def reduction(self):
-        return self._data["reduction"]
+    def data(self):
+        return self._data

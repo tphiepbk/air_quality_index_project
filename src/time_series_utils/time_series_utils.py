@@ -2,6 +2,7 @@
 
 import pandas as pd
 import numpy as np
+from tqdm.notebook import tqdm
 
 # ==========================================================================================
 
@@ -34,7 +35,7 @@ def reframePastFuture(df, n_past=1, n_future=1, keep_label_only=False):
         
         if future_end > total_len:
               break
-
+            
         ret_X.append(df.iloc[window_start:past_end, :])
         if keep_label_only:
               ret_y.append(df.iloc[past_end:future_end, 0])

@@ -11,8 +11,7 @@ from .base import Seq2SeqReductionModel
 class LSTMSeq2SeqReduction(Seq2SeqReductionModel):
     # Constructor
     def __init__(self, X_scaled, test_percentage=0.2, latent_dim=8, epochs=10, batch_size=10, n_past=0, n_future=0, verbose=0, model_name=None):
-        super.__init__(X_scaled, test_percentage, latent_dim, epochs, batch_size, n_past, n_future, verbose, model_name)
-        self._class_name = "LSTMSeq2SeqReduction"
+        super().__init__(X_scaled, test_percentage, latent_dim, epochs, batch_size, n_past, n_future, verbose, model_name, class_name="LSTMSeq2SeqReduction")
 
     # Define the model
     def _define_model(self):
