@@ -37,8 +37,8 @@ from keras.losses import MeanAbsoluteError
 from keras.losses import MeanAbsoluteError, MeanSquaredError
 import keras.backend as K
 
-from src.time_series_utils.time_series_utils import splitTrainTestTimeSeries, reframePastFuture
-from src.config_reader.config_reader import ConfigurationReader
+from src.time_series_utils import splitTrainTestTimeSeries, reframePastFuture
+from src.config_reader import ConfigurationReader
 
 conf = ConfigurationReader("/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/model_params.json").data
 

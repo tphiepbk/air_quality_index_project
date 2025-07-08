@@ -2,7 +2,6 @@
 
 import pandas as pd
 import numpy as np
-from tqdm.notebook import tqdm
 
 # ==========================================================================================
 
@@ -46,3 +45,21 @@ def reframePastFuture(df, n_past=1, n_future=1, keep_label_only=False):
         ret_y = np.expand_dims(ret_y, axis=-1)
     
     return np.array(ret_X), np.array(ret_y)
+
+# ==========================================================================================
+
+def prepareReducedData(X_scaled, time_indices, station_column=None):
+    # Deep copy
+    df_aod_reduced = X_scaled.copy(deep=True)
+
+    # Rename columns
+    rename_dict = {column: f"aod_feature_{column+1}" for column in df_aod_reduced.columns}
+    df_aod_reduced.rename(rename_dict, axis=1, inplace=True)
+    
+    # Set station column
+    if station_column:
+        df_aod_reduced["station"] = station_column.values
+
+    # Set time indices
+    df_aod_reduced.set_index(time_indices, inplace=True)
+    return df_aod_reduced

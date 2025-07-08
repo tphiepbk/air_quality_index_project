@@ -1,7 +1,12 @@
 {
     "dataset": {
-        "matchingdata2022": {
+        "aod2022": {
             "file_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/MatchingData2022.xlsx"
+        },
+        "aod2021": {
+            "file_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/aod_data_daily.csv",
+            "target_start_date": "2021-01-01",
+            "target_end_date": "2021-12-31"
         },
         "mpair": {
             "file_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/MPair.csv",

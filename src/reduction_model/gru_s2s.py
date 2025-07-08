@@ -5,7 +5,7 @@ from keras.layers import Dense, GRU, RepeatVector, TimeDistributed
 from keras.optimizers import Adam
 from keras.losses import MeanAbsoluteError
 
-from .base import Seq2SeqReductionModel
+from src.reduction_model.base import Seq2SeqReductionModel
 
 # Sequence-to-sequence reduction model using GRU
 class GRUSeq2SeqReduction(Seq2SeqReductionModel):
