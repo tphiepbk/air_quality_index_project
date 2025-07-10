@@ -57,7 +57,7 @@ def prepareReducedData(X_scaled, time_indices, station_column=None):
     df_aod_reduced.rename(rename_dict, axis=1, inplace=True)
     
     # Set station column
-    if station_column:
+    if station_column is not None:
         df_aod_reduced["station"] = station_column.values
 
     # Set time indices

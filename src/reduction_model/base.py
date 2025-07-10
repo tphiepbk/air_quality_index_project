@@ -101,7 +101,7 @@ class Seq2SeqReductionModel(object):
         self._encoder_model = self._define_encoder_model()
         # Set logging to INFO only
         tf.get_logger().setLevel(logging.INFO)
-        return self._encode_data()
+        return self._encode_data(), self._save_encoder_model()
 
     # Train and evaluate the model
     def _train_model(self):
@@ -116,6 +116,12 @@ class Seq2SeqReductionModel(object):
         y_predicted= self._model.predict(X_test, verbose=self._verbose)
         mae = self._model.evaluate(y_predicted, y_test, verbose=self._verbose)
         return mae
+
+    # Get save the encoder model and return the path
+    def _save_encoder_model(self):
+        model_path = f'{conf["workspace"]["model_info_dir"]}/{self._encoder_model.name}.keras'
+        self._encoder_model.save(model_path)
+        return model_path
         
     # Reduce dimension with trained Encoder
     def _encode_data(self):
