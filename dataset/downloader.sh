@@ -1,8 +1,18 @@
 #!/bin/bash
 
-# MPAir.csv
+# MPair.csv
 if [ ! -f "MPair.csv" ]; then
     gdown 1lklbnCBydhcs7y1wu9wK3o5aTXC3_EGO
+fi
+
+# station2022.csv (used for MPair data)
+if [ ! -f "station2022.csv" ]; then
+    gdown 1QuHV4c9TrdvDSybSNFmno-6lgxoPcK8t
+fi
+
+# station2018-2021.csv (used for MPair data)
+if [ ! -f "station2018-2021.csv" ]; then
+    gdown 11ibVcOJ76ieY5qV7q7f_c2kSM516h1Ue
 fi
 
 # AOD data 2022

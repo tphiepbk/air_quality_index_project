@@ -11,7 +11,9 @@
         "mpair": {
             "file_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/MPair.csv",
             "target_start_date": "2021-01-01",
-            "target_end_date": "2022-12-31"
+            "target_end_date": "2022-12-31",
+            "station_2022_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/station2022.csv",
+            "station_2018_2021_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/station2018-2021.csv"
         }
     },
     "workspace": {
