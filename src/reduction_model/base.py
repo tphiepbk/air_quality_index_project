@@ -120,7 +120,7 @@ class Seq2SeqReductionModel(object):
     # Get save the encoder model and return the path
     def _save_encoder_model(self):
         model_path = f'{conf["workspace"]["model_info_dir"]}/{self._encoder_model.name}.keras'
-        self._encoder_model.save(model_path)
+        self._encoder_model.save(model_path, include_optimizer=True)
         return model_path
         
     # Reduce dimension with trained Encoder
