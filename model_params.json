@@ -22,7 +22,9 @@
         "model_checkpoints_dir": "/le_thanh_van_118/workspace/hiep_workspace/model_checkpoints",
         "data_by_location_dir": "/le_thanh_van_118/workspace/hiep_workspace/data_by_location",
         "data_by_station_dir": "/le_thanh_van_118/workspace/hiep_workspace/data_by_station",
-        "data_statistic_dir": "/le_thanh_van_118/workspace/hiep_workspace/data_statistic"
+        "data_statistic_dir": "/le_thanh_van_118/workspace/hiep_workspace/data_statistic",
+        "best_reduction_models_dir": "/le_thanh_van_118/workspace/hiep_workspace/best_reduction_models",
+        "best_reduced_data": "/le_thanh_van_118/workspace/hiep_workspace/best_reduced_data"
     },
     "prediction": {
         "n_past": 7,
@@ -35,6 +37,6 @@
         "n_future": 7,
         "epochs": 20,
         "batch_size": 128,
-        "min_number_of_features": 13
+        "min_number_of_features": 15
     }
 }
