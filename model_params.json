@@ -1,7 +1,9 @@
 {
     "dataset": {
         "aod2022": {
-            "file_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/MatchingData2022.xlsx"
+            "file_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/MatchingData2022.xlsx",
+            "target_start_date": "2022-01-01",
+            "target_end_date": "2022-12-31"
         },
         "aod2021": {
             "file_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/aod_data_daily.csv",
@@ -14,7 +16,8 @@
             "target_end_date": "2022-12-31",
             "station_2022_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/station2022.csv",
             "station_2018_2021_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/station2018-2021.csv",
-            "merged_data_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/mpair_merged.csv"
+            "merged_data_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/mpair_merged.csv",
+            "merged_data_dir_all_locations": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/mpair_merged_all_locations.csv"
         }
     },
     "workspace": {
