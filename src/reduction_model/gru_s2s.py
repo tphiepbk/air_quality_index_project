@@ -9,14 +9,16 @@ from src.reduction_model.base import Seq2SeqReductionModel
 
 # Sequence-to-sequence reduction model using GRU
 class GRUSeq2SeqReduction(Seq2SeqReductionModel):
+    # Class attributes
+    class_name = "GRUSeq2SeqReduction"
+    
     # Constructor
-    def __init__(self, X_scaled, test_percentage=0.2, latent_dim=8, epochs=10, batch_size=10, n_past=0, n_future=0, verbose=0, model_name=None):
-        super().__init__(X_scaled, test_percentage, latent_dim, epochs, batch_size, n_past, n_future, verbose, model_name)
-        self._class_name = "GRUSeq2SeqReduction"
-        
+    def __init__(self, scaled_data, val_percentage=0.2, test_percentage=0.2, latent_dim=8, epochs=10, batch_size=10, n_past=0, n_future=0, verbose=0, model_name=None):
+        super().__init__(scaled_data, val_percentage, test_percentage, latent_dim, epochs, batch_size, n_past, n_future, verbose, model_name, class_name=self.__class__.class_name)
+
     # Define the model
     def _define_model(self):
-        print(f"{self._class_name}._define_model(): is called") if self._verbose else None
+        print(f"{self.__class__.class_name}._define_model(): is called") if self._verbose else None
         # Encoder layers
         encoder_inputs = Input(shape=(self._n_past, self._n_features))
         encoder_gru_1 = GRU(100, return_sequences=True, activation="relu")(encoder_inputs)
@@ -35,7 +37,7 @@ class GRUSeq2SeqReduction(Seq2SeqReductionModel):
     
     # Define the Encoder model
     def _define_encoder_model(self):
-        print(f"{self._class_name}._define_encoder_model(): is called") if self._verbose else None
+        print(f"{self.__class__.class_name}._define_encoder_model(): is called") if self._verbose else None
         # Encoder only
         encoder_inputs = Input(shape=(self._n_past, self._n_features))
         encoder_gru_1 = self._model.layers[1](encoder_inputs)

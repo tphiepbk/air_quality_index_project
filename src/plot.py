@@ -12,6 +12,7 @@ def plot_1_data(data, datalabel="label", xlabel="xlabel", ylabel="ylabel", figsi
     plt.ylabel(ylabel, size=15)
     plt.xlabel(xlabel, size=15)
     plt.legend(fontsize=15)
+    plt.tight_layout()
     plt.show()
 
 # ==========================================================================================
@@ -26,4 +27,40 @@ def plot_2_data(data1, data2, datalabel1="label1", datalabel2="label2", xlabel="
     plt.ylabel(ylabel, size=15)
     plt.xlabel(xlabel, size=15)
     plt.legend(fontsize=15)
+    plt.tight_layout()
     plt.show()
+
+# ==========================================================================================
+
+def plot_learning_curves(history, figsize=(12, 5)):
+    train_loss = history.history['loss']
+    val_loss = history.history['val_loss']
+    epochs = range(1, len(train_loss) + 1)
+
+    plt.figure(figsize=figsize)
+
+    plt.plot(epochs, train_loss, label='Training Loss')
+    plt.plot(epochs, val_loss, label='Validation Loss')
+    plt.title('Training and Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
+# ==========================================================================================
+    
+# Visualize the prediction
+def plot_prediction(all_days_inv_y_pred, all_days_inv_y_test, n_future):
+    for day in range(n_future):
+        inv_y_pred = all_days_inv_y_pred[day,:,:]
+        inv_y_test = all_days_inv_y_test[day,:,:]
+        print(f"inv_y_pred.shape = {inv_y_pred.shape}\ninv_y_test.shape = {inv_y_test.shape}")
+        plot_2_data(data1=inv_y_pred,
+                    data2=inv_y_test,
+                    datalabel1="Prediction",
+                    datalabel2="Actual",
+                    xlabel="Time step",
+                    ylabel="PM2.5")

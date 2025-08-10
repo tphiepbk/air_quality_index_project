@@ -5,17 +5,34 @@ import numpy as np
 
 # ==========================================================================================
 
-def splitTrainTestTimeSeries(X, y, test_percentage=0.2):
+def padPastFuture(data: pd.DataFrame, n_past=1, n_future=1):
+    padded_before = pd.DataFrame([data.iloc[0]] * n_past)
+    padded_after = pd.DataFrame([data.iloc[-1]] * (n_future - 1))
+    return pd.concat([padded_before, data, padded_after], axis=0)
+
+# ==========================================================================================
+
+def splitTrainValidationTestTimeSeries(X, y, test_percentage=0.2, val_percentage=0.2):
     total_size = X.shape[0]
     train_test_split_indicator_index = round(total_size * (1 - test_percentage))
     
-    X_train = X[:train_test_split_indicator_index]
-    y_train = y[:train_test_split_indicator_index]
+    X_train_val = X[:train_test_split_indicator_index]
+    y_train_val = y[:train_test_split_indicator_index]
     X_test = X[train_test_split_indicator_index:]
     y_test = y[train_test_split_indicator_index:]
-    return X_train, X_test, y_train, y_test
+
+    train_val_size = len(X_train_val)
+    train_val_split_indicator_index = round(train_val_size * (1 - val_percentage))
+    
+    X_train = X[:train_val_split_indicator_index]
+    y_train = y[:train_val_split_indicator_index]
+    X_val = X[train_val_split_indicator_index:]
+    y_val = y[train_val_split_indicator_index:]
+    
+    return X_train, X_val, X_test, y_train, y_val, y_test
 
 # ==========================================================================================
+
 
 '''
 Reframe the dataset to past-future form
@@ -34,12 +51,13 @@ def reframePastFuture(df, n_past=1, n_future=1, keep_label_only=False):
         
         if future_end > total_len:
               break
-            
-        ret_X.append(df.iloc[window_start:past_end, :])
+
         if keep_label_only:
-              ret_y.append(df.iloc[past_end:future_end, 0])
+            ret_X.append(df.iloc[window_start:past_end, :])
+            ret_y.append(df.iloc[past_end:future_end, -1])
         else:
-              ret_y.append(df.iloc[past_end:future_end, :])
+            ret_X.append(df.iloc[window_start:past_end, :])
+            ret_y.append(df.iloc[past_end:future_end, :])
 
     if keep_label_only:
         ret_y = np.expand_dims(ret_y, axis=-1)
