@@ -38,7 +38,7 @@ from keras.losses import MeanAbsoluteError
 from keras.losses import MeanAbsoluteError, MeanSquaredError
 import keras.backend as K
 
-from src.time_series_utils import splitTrainValidationTestTimeSeries, reframePastFuture
+from src.time_series_utils import splitTrainValidationTestTimeSeries, reframePastFuture, padPastFuture
 from src.config_reader import ConfigurationReader
 from src.plot import plot_learning_curves
 
@@ -111,7 +111,7 @@ class LSTMPrediction(object):
         print(self._model.summary())
         plot_model(self._model, to_file=f'{conf["workspace"]["model_info_dir"]}/{self._model.name}.png', show_shapes=True, dpi=100)
 
-    # Train and evaluate the model
+    # Train the model
     def _train_model(self):
         print(f"{self.__class__.class_name}._train_model(): is called") if self._verbose else None
         
@@ -136,9 +136,8 @@ class LSTMPrediction(object):
                 shuffle=False)
         # Plot the learning curves
         plot_learning_curves(history)
-        # Predict the values
+        # Predict test data
         y_predicted = self._model.predict(X_test_reframed, verbose=self._verbose)
-        # Return values
         return y_predicted, y_test_reframed
 
     # Evaluate the model
@@ -198,9 +197,6 @@ class LSTMPrediction(object):
         avg_r2 = np.average(all_days_r2)
         print(f"avg_r2 = {avg_r2}") if self._verbose else None
         
-        # Set logging to INFO
-        tf.get_logger().setLevel(logging.INFO)
-        
         # Return the avarage MAE of all days and the MAE of each day also
         # Return the inverted y_test and y_pred of each day also
         return all_days_inv_y_pred, all_days_inv_y_test, all_days_mae, avg_mae, all_days_mse, avg_mse, all_days_r2, avg_r2
@@ -229,12 +225,9 @@ def predictLSTMNoSplit(X, y, n_past=1, n_future=1, epochs=10, batch_size=64, mod
     # Set logging to ERROR only
     tf.get_logger().setLevel(logging.ERROR)
 
-    padded_before = pd.DataFrame([X.iloc[0]] * n_past)
-    padded_after = pd.DataFrame([X.iloc[-1]] * (n_future - 1))
-    X = pd.concat([padded_before, X, padded_after])
-    padded_before = pd.DataFrame([y.iloc[0]] * n_past)
-    padded_after = pd.DataFrame([y.iloc[-1]] * (n_future - 1))
-    y = pd.concat([padded_before, y, padded_after])
+    # Padding
+    X = padPastFuture(X, n_past, n_future)
+    y = padPastFuture(y, n_past, n_future)
     
     # Convert to numpy array
     if isinstance(X, pd.DataFrame):
@@ -262,13 +255,15 @@ def predictLSTMNoSplit(X, y, n_past=1, n_future=1, epochs=10, batch_size=64, mod
     # Output: (n_future, n_label)
     n_features, n_label = X_reframed.shape[-1], y_reframed.shape[-1]
     
+    # Define layers
     model = Sequential()
     encoder_input = Input(shape=(n_past, n_features))
-    encoder_lstm, state_h, state_c = LSTM(200, activation="relu", return_state=True)(encoder_input)
+    encoder_lstm, state_h, state_c = LSTM(64, activation="relu", return_state=True)(encoder_input)
     decoder_input = RepeatVector(n_future)(encoder_lstm)
-    decoder_lstm = LSTM(200, activation="relu", return_sequences=True)(decoder_input, initial_state = [state_h, state_c])
-    decoder_dense_1 = TimeDistributed(Dense(100, activation="relu"))(decoder_lstm)
-    decoder_dense_2 = TimeDistributed(Dense(1))(decoder_dense_1)
+    decoder_lstm = LSTM(64, activation="relu", return_sequences=True)(decoder_input, initial_state = [state_h, state_c])
+    dropout_2 = Dropout(0.2)(decoder_lstm)
+    decoder_dense_1 = TimeDistributed(Dense(32, activation="relu"))(dropout_2)
+    decoder_dense_2 = TimeDistributed(Dense(n_label))(decoder_dense_1)
     model = Model(encoder_input, decoder_dense_2)
     
     # Compile model

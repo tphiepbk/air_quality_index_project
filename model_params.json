@@ -18,7 +18,14 @@
             "station_2018_2021_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/station2018-2021.csv",
             "merged_data_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/mpair_merged.csv",
             "merged_data_dir_all_locations": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/mpair_merged_all_locations.csv"
+        },
+        "cmaq": {
+            "file_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/concentration_station"
+        },
+        "pm": {
+            "file_dir": "/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/dataset/quan_trac"
         }
+        
     },
     "workspace": {
         "model_info_dir": "/le_thanh_van_118/workspace/hiep_workspace/model_info",
@@ -30,7 +37,7 @@
         "best_reduced_data": "/le_thanh_van_118/workspace/hiep_workspace/best_reduced_data"
     },
     "prediction": {
-        "n_past": 7,
+        "n_past": 24,
         "n_future": 1,
         "epochs": 50,
         "batch_size": 128
@@ -40,6 +47,6 @@
         "n_future": 7,
         "epochs": 50,
         "batch_size": 128,
-        "min_number_of_features": 13
+        "min_number_of_features": 15
     }
 }
