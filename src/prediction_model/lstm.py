@@ -27,7 +27,7 @@ from sklearn.impute import IterativeImputer
 # Model
 import tensorflow as tf
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, root_mean_squared_error, mean_absolute_percentage_error
 from keras import Input, Model, Sequential
 from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed, Dropout, GRU, Conv1D, MaxPooling1D, Flatten
 from keras.utils import plot_model
@@ -51,11 +51,16 @@ This implementation could be applied for any n_past and n_future
 class LSTMPrediction(object):
     # Class attribute
     class_name = 'LSTMPrediction'
+    supported_metrics = ["mae", "mse", "rmse", "r2", "mape"]
 
     # Class method
     @classmethod
     def get_class_name(cls):
         return cls.class_name
+
+    @classmethod
+    def get_supported_metrics(cls):
+        return cls.supported_metrics
     
     def __init__(self, X_scaled: pd.DataFrame, y_scaled: pd.DataFrame, label_scaler, val_percentage=0.2, test_percentage=0.2, epochs=10, batch_size=10, n_past=0, n_future=0, verbose=0, model_name=None):
         # Hyper parameters
@@ -149,6 +154,8 @@ class LSTMPrediction(object):
         all_days_mae = []
         all_days_mse = []
         all_days_r2 = []
+        all_days_rmse = []
+        all_days_mape = []
         
         # In case the y_pred has this shape: (n_predict_samples, n_future),
         # expand the last dimension => (n_predict_samples, n_future, n_label)
@@ -175,8 +182,14 @@ class LSTMPrediction(object):
     
             r2 = r2_score(current_day_inv_y_pred, current_day_inv_y_test)
             all_days_r2.append(r2)
+
+            rmse = root_mean_squared_error(current_day_inv_y_pred, current_day_inv_y_test)
+            all_days_rmse.append(rmse)
+            
+            mape = mean_absolute_percentage_error(current_day_inv_y_pred, current_day_inv_y_test)
+            all_days_mape.append(mape)
         
-            print(f"Day {day+1} - mae = {mae}, mse = {mse}, r2 = {r2}") if self._verbose else None
+            print(f"Day {day+1} - mae = {mae}, mse = {mse}, r2 = {r2}, rmse = {rmse}, mape = {mape}") if self._verbose else None
         
         # Convert to NumPy array
         # Output shape:
@@ -186,6 +199,8 @@ class LSTMPrediction(object):
         all_days_mae = np.array(all_days_mae)
         all_days_mse = np.array(all_days_mse)
         all_days_r2 = np.array(all_days_r2)
+        all_days_rmse = np.array(all_days_rmse)
+        all_days_mape = np.array(all_days_mape)
         all_days_inv_y_pred = np.array(all_days_inv_y_pred)
         all_days_inv_y_test = np.array(all_days_inv_y_test)
         
@@ -196,10 +211,22 @@ class LSTMPrediction(object):
         print(f"avg_mse = {avg_mse}") if self._verbose else None
         avg_r2 = np.average(all_days_r2)
         print(f"avg_r2 = {avg_r2}") if self._verbose else None
+        avg_rmse = np.average(all_days_rmse)
+        print(f"avg_rmse = {avg_rmse}") if self._verbose else None
+        avg_mape = np.average(all_days_mape)
+        print(f"avg_mape = {avg_mape}") if self._verbose else None
+
+        metrics = {
+            "mae": (all_days_mae, avg_mae),
+            "mse": (all_days_mse, avg_mse),
+            "rmse": (all_days_rmse, avg_rmse),
+            "r2": (all_days_r2, avg_r2),
+            "mape": (all_days_mape, avg_mape),
+        }
         
-        # Return the avarage MAE of all days and the MAE of each day also
+        # Return the avarage metrics of all days and the metrics of each day also
         # Return the inverted y_test and y_pred of each day also
-        return all_days_inv_y_pred, all_days_inv_y_test, all_days_mae, avg_mae, all_days_mse, avg_mse, all_days_r2, avg_r2
+        return all_days_inv_y_pred, all_days_inv_y_test, metrics
         
     # Main execution method
     def execute(self):
@@ -262,12 +289,15 @@ def predictLSTMNoSplit(X, y, n_past=1, n_future=1, epochs=10, batch_size=64, mod
     decoder_input = RepeatVector(n_future)(encoder_lstm)
     decoder_lstm = LSTM(64, activation="relu", return_sequences=True)(decoder_input, initial_state = [state_h, state_c])
     dropout_2 = Dropout(0.2)(decoder_lstm)
-    decoder_dense_1 = TimeDistributed(Dense(32, activation="relu"))(dropout_2)
-    decoder_dense_2 = TimeDistributed(Dense(n_label))(decoder_dense_1)
-    model = Model(encoder_input, decoder_dense_2)
+    #decoder_dense_1 = TimeDistributed(Dense(32, activation="relu"))(dropout_2)
+    #decoder_dense_2 = TimeDistributed(Dense(n_label))(decoder_dense_1)
+    #model = Model(encoder_input, decoder_dense_2)
+    decoder_dense = TimeDistributed(Dense(n_label))(dropout_2)
+    model = Model(encoder_input, decoder_dense)
     
     # Compile model
-    model.compile(loss=MeanAbsoluteError(), optimizer=Adam(learning_rate=0.001))
+    #model.compile(loss=MeanAbsoluteError(), optimizer=Adam(learning_rate=0.001))
+    model.compile(loss=MeanSquaredError(), optimizer=Adam(learning_rate=0.001))
     model.name = model_name
     print(model.summary()) if verbose else None
     plot_model(model, to_file=f'{conf["workspace"]["model_info_dir"]}/{model_name}.png', show_shapes=True, dpi=100)

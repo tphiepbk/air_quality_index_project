@@ -32,6 +32,22 @@ def plot_2_data(data1, data2, datalabel1="label1", datalabel2="label2", xlabel="
 
 # ==========================================================================================
 
+def plot_3_data(data1, data2, data3, datalabel1="label1", datalabel2="label2", datalabel3="label3", xlabel="xlabel", ylabel="ylabel", figsize=(20, 8)):
+    assert len(data1) == len(data2) == len(data3), "data1 and data2 should be the same length"
+    size = len(data1)
+    scheme=[x for x in range(size)]
+    plt.figure(figsize=figsize)
+    plt.plot(scheme, data1, c='b', label=datalabel1)
+    plt.plot(scheme, data2, c='r', label=datalabel2)
+    plt.plot(scheme, data3, c='g', label=datalabel3)
+    plt.ylabel(ylabel, size=15)
+    plt.xlabel(xlabel, size=15)
+    plt.legend(fontsize=15)
+    plt.tight_layout()
+    plt.show()
+
+# ==========================================================================================
+
 def plot_learning_curves(history, figsize=(12, 5)):
     train_loss = history.history['loss']
     val_loss = history.history['val_loss']

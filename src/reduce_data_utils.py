@@ -43,8 +43,6 @@ def augmentReducedData(df_aod_reduced, y_aod_scaled, aod_pm25_3km_column, aod_la
     inv_y_aod = aod_label_scaler.inverse_transform(y_aod_scaled)
     inv_y_pred = aod_label_scaler.inverse_transform(y_pred.reshape(-1, 1))
     
-    print(mean_absolute_error(inv_y_aod, inv_y_pred))
-    
     hiep_predicted_pm25 = pd.DataFrame(inv_y_pred, columns=["hiep_predicted_pm25"], index=df_aod_reduced.index)
     
     augmented_df_aod_reduced = pd.concat([df_aod_reduced, aod_pm25_3km_column, hiep_predicted_pm25], axis=1)

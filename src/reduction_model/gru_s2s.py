@@ -32,7 +32,6 @@ class GRUSeq2SeqReduction(Seq2SeqReductionModel):
         decoder_outputs = TimeDistributed(Dense(self._n_features))(decoder_gru_2)
         # Compile the model
         gru_seq2seq = Model(encoder_inputs, decoder_outputs)
-        gru_seq2seq.compile(optimizer=Adam(learning_rate=0.001), loss=MeanAbsoluteError())
         return gru_seq2seq
     
     # Define the Encoder model

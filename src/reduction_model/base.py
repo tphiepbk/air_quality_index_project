@@ -33,7 +33,6 @@ from keras.utils import plot_model
 from keras.saving import load_model
 from keras.callbacks import LearningRateScheduler, ModelCheckpoint
 from keras.optimizers import Adam
-from keras.losses import MeanAbsoluteError
 from keras.losses import MeanAbsoluteError, MeanSquaredError
 import keras.backend as K
 
@@ -114,6 +113,8 @@ class Seq2SeqReductionModel(object):
                                                                                             self._y_scaled_reframed,
                                                                                             val_percentage = self._val_percentage,
                                                                                             test_percentage = self._test_percentage)
+        #self._model.compile(optimizer=Adam(learning_rate=0.001), loss=MeanAbsoluteError())
+        self._model.compile(optimizer=Adam(learning_rate=0.001), loss=MeanSquaredError())
         self._model.fit(X_train, y_train,
                         epochs=self._epochs,
                         batch_size=self._batch_size,

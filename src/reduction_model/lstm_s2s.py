@@ -32,7 +32,6 @@ class LSTMSeq2SeqReduction(Seq2SeqReductionModel):
         decoder_outputs = TimeDistributed(Dense(self._n_features))(decoder_lstm_2)
         # Compile the model
         lstm_seq2seq = Model(encoder_inputs, decoder_outputs)
-        lstm_seq2seq.compile(optimizer=Adam(learning_rate=0.001), loss=MeanAbsoluteError())
         return lstm_seq2seq
 
     # Define the Encoder model
