@@ -2,7 +2,7 @@
 
 # MPair.csv
 if [ ! -f "MPair.csv" ]; then
-    gdown 1lklbnCBydhcs7y1wu9wK3o5aTXC3_EGO
+    gdown 11B67jA2x8l3JG6DCJK2s0BkDllEngM78
 fi
 
 # station2022.csv (used for MPair data)
