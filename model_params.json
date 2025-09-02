@@ -40,7 +40,7 @@
         "best_reduced_data": "/le_thanh_van_118/workspace/hiep_workspace/best_reduced_data"
     },
     "prediction": {
-        "n_past": 24,
+        "n_past": 7,
         "n_future": 1,
         "epochs": 50,
         "batch_size": 128
