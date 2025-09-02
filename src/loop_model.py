@@ -87,7 +87,8 @@ def choose_the_best(loopresults, metric_to_choose="mae"):
             best_encoded_data = loopresult["encoded_data"]
             best_evaluation_data = loopresult["evaluation_data"]
             best_encoder_model_path = loopresult["encoder_model_path"]
-    
+            best_metric_value = loopresult["metrics"][metric_to_choose]
+
     # Visualize the prediction
     plot_prediction(best_evaluation_data[0], best_evaluation_data[1], conf["prediction"]["n_future"])
 

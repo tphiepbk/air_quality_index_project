@@ -50,6 +50,6 @@
         "n_future": 7,
         "epochs": 50,
         "batch_size": 128,
-        "min_number_of_features": 13
+        "min_number_of_features": 8
     }
 }
