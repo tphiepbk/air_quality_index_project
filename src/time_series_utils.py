@@ -2,6 +2,7 @@
 
 import pandas as pd
 import numpy as np
+from statsmodels.tsa.stattools import adfuller
 
 # ==========================================================================================
 
@@ -62,4 +63,21 @@ def reframePastFuture(df, n_past=1, n_future=1, keep_label_only=False):
         ret_y = np.expand_dims(ret_y, axis=-1)
     
     return np.array(ret_X), np.array(ret_y)
+
+# ==========================================================================================
+# Check the stationarity of a timeseries
+# Copied from https://machinelearningmastery.com/time-series-data-stationary-python/
+
+def check_stationarity(series):
+    result = adfuller(series.values)
+    print('ADF Statistic: %f' % result[0])
+    print('p-value: %f' % result[1])
+    print('Critical Values:')
+    for key, value in result[4].items():
+        print('\t%s: %.3f' % (key, value))
+
+    if (result[1] <= 0.05) & (result[4]['5%'] > result[0]):
+        print("\u001b[32mStationary\u001b[0m")
+    else:
+        print("\x1b[31mNon-stationary\x1b[0m")
 
