@@ -103,12 +103,11 @@ class LSTMPrediction(object):
         encoder_lstm, state_h, state_c = LSTM(64, activation="relu", return_state=True)(encoder_input)
         decoder_input = RepeatVector(self._n_future)(encoder_lstm)
         decoder_lstm = LSTM(64, activation="relu", return_sequences=True)(decoder_input, initial_state = [state_h, state_c])
-        dropout_2 = Dropout(0.2)(decoder_lstm)
-        decoder_dense_1 = TimeDistributed(Dense(32, activation="relu"))(dropout_2)
-        decoder_dense_2 = TimeDistributed(Dense(self._y_scaled_reframed.shape[-1]))(decoder_dense_1)
-        model = Model(encoder_input, decoder_dense_2)
+        dropout = Dropout(0.2)(decoder_lstm)
+        decoder_dense = TimeDistributed(Dense(self._y_scaled_reframed.shape[-1]))(dropout)
+        model = Model(encoder_input, decoder_dense)
         # Compile model
-        model.compile(loss=MeanAbsoluteError(), optimizer=Adam(learning_rate=0.001))
+        model.compile(loss=MeanSquaredError(), optimizer=Adam(learning_rate=0.001))
         return model
 
     # Get model information
