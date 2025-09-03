@@ -10,5 +10,7 @@ git clone "https://github.com/tphiepbk/$REPO.git" && \
 cd "$REPO" && \
 pushd "dataset" && \
 bash downloader.sh && \
-popd
+popd && \
+git config --global user.email "itmanagertph@gmail.com" && \
+git config --global user.name "Hiep Phuc Thai"
 ```
