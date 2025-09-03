@@ -30,3 +30,9 @@ if [ ! -d "concentration_station" ]; then
     gdown 1-yRpPuRlvDSEhR-PZftiprAMAckk1eGh
     tar xzf concentration_station.tar.gz
 fi
+
+# PM data
+if [ ! -d "quan-trac" ]; then
+    gdown 1XSmmzj5T6kf3Km-s_gUG_NFdXEpKDKat
+    tar xzf "quan-trac.tar.gz"
+fi
