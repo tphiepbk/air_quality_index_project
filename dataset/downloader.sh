@@ -24,3 +24,9 @@ fi
 if [ ! -f "aod_data_daily.csv" ]; then
     gdown 1wncw0PQVhB2xwJoAR2wsUbmQi0k4yIRp
 fi
+
+# CMAQ dataset
+if [ ! -d "concentration_station" ]; then
+    gdown 1-yRpPuRlvDSEhR-PZftiprAMAckk1eGh
+    tar xzf concentration_station.tar.gz
+fi
