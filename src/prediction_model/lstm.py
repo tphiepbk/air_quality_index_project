@@ -31,18 +31,25 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, r
 from keras import Input, Model, Sequential
 from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed, Dropout, GRU, Conv1D, MaxPooling1D, Flatten
 from keras.utils import plot_model
-from keras.saving import load_model
-from keras.callbacks import LearningRateScheduler, ModelCheckpoint
+from keras.callbacks import EarlyStopping
 from keras.optimizers import Adam
-from keras.losses import MeanAbsoluteError
-from keras.losses import MeanAbsoluteError, MeanSquaredError
-import keras.backend as K
+from keras.losses import MeanSquaredError
+from tqdm.keras import TqdmCallback
+from keras.models import load_model
+from scipy.stats import pearsonr
 
 from src.time_series_utils import splitTrainValidationTestTimeSeries, reframePastFuture, padPastFuture
 from src.config_reader import ConfigurationReader
 from src.plot import plot_learning_curves
 
+
 conf = ConfigurationReader("/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/model_params.json").data
+
+# Calculate MNBE
+def mean_normalized_bias_error(y_pred, y_actual):
+    y_pred = np.array(y_pred)
+    y_actual = np.array(y_actual)
+    return np.mean((y_pred - y_actual) / np.mean(y_actual)) * 100
 
 '''
 Receive the encoded features and labels as inputs
@@ -51,7 +58,7 @@ This implementation could be applied for any n_past and n_future
 class LSTMPrediction(object):
     # Class attribute
     class_name = 'LSTMPrediction'
-    supported_metrics = ["mae", "mse", "rmse", "r2", "mape"]
+    supported_metrics = ["mae", "mse", "rmse", "r2", "mape", "mnbe", "r"]
 
     # Class method
     @classmethod
@@ -62,7 +69,13 @@ class LSTMPrediction(object):
     def get_supported_metrics(cls):
         return cls.supported_metrics
     
-    def __init__(self, X_scaled: pd.DataFrame, y_scaled: pd.DataFrame, label_scaler, val_percentage=0.2, test_percentage=0.2, epochs=10, batch_size=10, n_past=0, n_future=0, verbose=0, model_name=None):
+    def __init__(self, X_scaled: pd.DataFrame, y_scaled: pd.DataFrame,
+                 label_scaler,
+                 val_percentage=0.2, test_percentage=0.2,
+                 n_past=0, n_future=0,
+                 epochs=10, batch_size=10,
+                 verbose=0,
+                 model_name=None):
         # Hyper parameters
         self._verbose = verbose
         self._label_scaler = label_scaler
@@ -110,11 +123,6 @@ class LSTMPrediction(object):
         model.compile(loss=MeanSquaredError(), optimizer=Adam(learning_rate=0.001))
         return model
 
-    # Get model information
-    def get_model_info(self):
-        print(self._model.summary())
-        plot_model(self._model, to_file=f'{conf["workspace"]["model_info_dir"]}/{self._model.name}.png', show_shapes=True, dpi=100)
-
     # Train the model
     def _train_model(self):
         print(f"{self.__class__.class_name}._train_model(): is called") if self._verbose else None
@@ -128,15 +136,16 @@ class LSTMPrediction(object):
         #   - X_test_reframed: [n_test_samples, n_past, n_features]
         #   - y_test_reframed: [n_test_samples, n_future, n_label]
         X_train_reframed, X_val_reframed, X_test_reframed, y_train_reframed, y_val_reframed, y_test_reframed = splitTrainValidationTestTimeSeries(self._X_scaled_reframed, self._y_scaled_reframed, test_percentage=self._test_percentage, val_percentage=self._val_percentage)
-        # Define model checkpoint
-        checkpoint = ModelCheckpoint(filepath=f'{conf["workspace"]["model_checkpoints_dir"]}/{self._model.name}.keras', save_best_only=True)
         # Fit model
         history = self._model.fit(X_train_reframed, y_train_reframed,
                 epochs=self._epochs,
                 batch_size=self._batch_size,
                 validation_data=(X_val_reframed, y_val_reframed),
                 verbose=self._verbose,
-                callbacks=[checkpoint],
+                callbacks = [
+                    EarlyStopping(monitor='val_loss', min_delta=0, patience=5, verbose=1, restore_best_weights=True),
+                    TqdmCallback(verbose=1)
+                ],
                 shuffle=False)
         # Plot the learning curves
         plot_learning_curves(history)
@@ -155,6 +164,8 @@ class LSTMPrediction(object):
         all_days_r2 = []
         all_days_rmse = []
         all_days_mape = []
+        all_days_mnbe = []
+        all_days_r = []
         
         # In case the y_pred has this shape: (n_predict_samples, n_future),
         # expand the last dimension => (n_predict_samples, n_future, n_label)
@@ -187,8 +198,14 @@ class LSTMPrediction(object):
             
             mape = mean_absolute_percentage_error(current_day_inv_y_pred, current_day_inv_y_test)
             all_days_mape.append(mape)
+
+            mnbe = mean_normalized_bias_error(current_day_inv_y_pred, current_day_inv_y_test)
+            all_days_mnbe.append(mnbe)
+            
+            r = pearsonr(current_day_inv_y_pred, current_day_inv_y_test)
+            all_days_r.append(r)
         
-            print(f"Day {day+1} - mae = {mae}, mse = {mse}, r2 = {r2}, rmse = {rmse}, mape = {mape}") if self._verbose else None
+            print(f"Day {day+1} - mae = {mae}, mse = {mse}, r2 = {r2}, rmse = {rmse}, mape = {mape}, mnbe = {mnbe}, r = {r}") if self._verbose else None
         
         # Convert to NumPy array
         # Output shape:
@@ -200,6 +217,9 @@ class LSTMPrediction(object):
         all_days_r2 = np.array(all_days_r2)
         all_days_rmse = np.array(all_days_rmse)
         all_days_mape = np.array(all_days_mape)
+        all_days_mnbe = np.array(all_days_mnbe)
+        all_days_r = np.array(all_days_r)
+        
         all_days_inv_y_pred = np.array(all_days_inv_y_pred)
         all_days_inv_y_test = np.array(all_days_inv_y_test)
         
@@ -214,6 +234,10 @@ class LSTMPrediction(object):
         print(f"avg_rmse = {avg_rmse}") if self._verbose else None
         avg_mape = np.average(all_days_mape)
         print(f"avg_mape = {avg_mape}") if self._verbose else None
+        avg_mnbe = np.average(all_days_mnbe)
+        print(f"avg_mnbe = {avg_mnbe}") if self._verbose else None
+        avg_r = np.average(all_days_r)
+        print(f"avg_r = {avg_r}") if self._verbose else None
 
         metrics = {
             "mae": (all_days_mae, avg_mae),
@@ -221,14 +245,21 @@ class LSTMPrediction(object):
             "rmse": (all_days_rmse, avg_rmse),
             "r2": (all_days_r2, avg_r2),
             "mape": (all_days_mape, avg_mape),
+            "mnbe": (all_days_mnbe, avg_mnbe),
+            "r": (all_days_r, avg_r),
         }
         
         # Return the avarage metrics of all days and the metrics of each day also
         # Return the inverted y_test and y_pred of each day also
         return all_days_inv_y_pred, all_days_inv_y_test, metrics
+
+    # Get model information
+    def dump(self, saved_model_plot_dir):
+        print(self._model.summary())
+        plot_model(self._model, to_file=f'{saved_model_plot_dir}/{self._model.name}.png', show_shapes=True, dpi=100)
         
     # Main execution method
-    def execute(self):
+    def execute(self, saved_model_weight_dir):
         # Set logging to ERROR only
         tf.get_logger().setLevel(logging.ERROR)
         print(f"{self.__class__.class_name}.execute(): is called") if self._verbose else None
@@ -236,9 +267,49 @@ class LSTMPrediction(object):
         y_predicted, y_test_reframed = self._train_model()
         # Set logging to INFO only
         tf.get_logger().setLevel(logging.INFO)
+        # Save model
+        model_path = f"{saved_model_weight_dir}/{self._model.name}.keras"
+        self._model.save(model_path, include_optimizer=True)
         # Return the evaluation model        
-        return self._evaluate_model(y_predicted, y_test_reframed)
+        return *self._evaluate_model(y_predicted, y_test_reframed), model_path
+        
+# ==========================================================================================
+
+'''
+Inference data using saved LSTM model
+'''
+def inferenceLSTM(X, y, n_past=1, n_future=1, saved_model_weight_dir=".", verbose=0):
+    # Set logging to ERROR only
+    tf.get_logger().setLevel(logging.ERROR)
+
+    # Padding
+    X = padPastFuture(X, n_past, n_future)
+    y = padPastFuture(y, n_past, n_future)
     
+    # Convert to numpy array
+    if isinstance(X, pd.DataFrame):
+        X = X.to_numpy()
+    if isinstance(y, pd.DataFrame):
+        y = y.to_numpy()
+    
+    # Combine X and y, y should be the last column
+    combined_X_y = np.concatenate((X, y), axis=1)
+    combined_df = pd.DataFrame(combined_X_y)
+    
+    # Reframe the dataset to past-future form
+    # Output shape:
+    #   - n_samples_reframed = n_samples - n_past - n_future + 1
+    #   - n_features_label = n_features + n_label
+    #   - X_reframed: [n_samples_reframed, n_past, n_features_label]
+    #   - y_reframed: [n_samples_reframed, n_future, n_label]
+    X_reframed, y_reframed = reframePastFuture(combined_df, n_past, n_future, keep_label_only=True)
+
+    # Load model and predict
+    saved_model = load_model(saved_model_weight_dir)
+    y_pred = saved_model.predict(X_reframed, verbose=verbose)
+    print("=" * 100) if verbose else None
+    return y_pred
+
 # ==========================================================================================
 
 '''
@@ -247,7 +318,8 @@ This implementation could be applied for any n_past and n_future
 Do not split to train test, just predict the encoded data
 Return the predicted label values
 '''
-def predictLSTMNoSplit(X, y, n_past=1, n_future=1, epochs=10, batch_size=64, model_name="lstm", verbose=0):
+'''
+def predictLSTMNoSplit(X, y, n_past=1, n_future=1, epochs=10, batch_size=64, verbose=0, model_name="lstm"):
     # Set logging to ERROR only
     tf.get_logger().setLevel(logging.ERROR)
 
@@ -319,3 +391,4 @@ def predictLSTMNoSplit(X, y, n_past=1, n_future=1, epochs=10, batch_size=64, mod
     print("=" * 100) if verbose else None
     
     return y_pred
+'''

@@ -48,6 +48,44 @@ def plot_3_data(data1, data2, data3, datalabel1="label1", datalabel2="label2", d
 
 # ==========================================================================================
 
+def plot_4_data(data1, data2, data3, data4, datalabel1="label1", datalabel2="label2", datalabel3="label3", datalabel4="label4", xlabel="xlabel", ylabel="ylabel", figsize=(20, 8)):
+    assert len(data1) == len(data2) == len(data3) == len(data4), "all data should be the same length"
+    size = len(data1)
+    scheme=[x for x in range(size)]
+    plt.figure(figsize=figsize)
+    plt.plot(scheme, data1, c='b', label=datalabel1)
+    plt.plot(scheme, data2, c='r', label=datalabel2)
+    plt.plot(scheme, data3, c='g', label=datalabel3)
+    plt.plot(scheme, data4, c='m', label=datalabel4)
+    plt.ylabel(ylabel, size=15)
+    plt.xlabel(xlabel, size=15)
+    plt.legend(fontsize=15)
+    plt.tight_layout()
+    plt.show()
+
+# ==========================================================================================
+
+def plot_5_data(data1, data2, data3, data4, data5,
+                datalabel1="label1", datalabel2="label2", datalabel3="label3", datalabel4="label4", datalabel5="label5",
+                xlabel="xlabel", ylabel="ylabel",
+                figsize=(20, 8)):
+    assert len(data1) == len(data2) == len(data3) == len(data4) == len(data5), "all data should be the same length"
+    size = len(data1)
+    scheme=[x for x in range(size)]
+    plt.figure(figsize=figsize)
+    plt.plot(scheme, data1, c='b', label=datalabel1)
+    plt.plot(scheme, data2, c='r', label=datalabel2)
+    plt.plot(scheme, data3, c='g', label=datalabel3)
+    plt.plot(scheme, data4, c='m', label=datalabel4)
+    plt.plot(scheme, data5, c='y', label=datalabel5)
+    plt.ylabel(ylabel, size=15)
+    plt.xlabel(xlabel, size=15)
+    plt.legend(fontsize=15)
+    plt.tight_layout()
+    plt.show()
+
+# ==========================================================================================
+
 def plot_learning_curves(history, figsize=(12, 5)):
     train_loss = history.history['loss']
     val_loss = history.history['val_loss']

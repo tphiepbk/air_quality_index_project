@@ -31,13 +31,14 @@ from keras import Input, Model, Sequential
 from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed, Dropout, GRU, Conv1D, MaxPooling1D, Flatten
 from keras.utils import plot_model
 from keras.saving import load_model
-from keras.callbacks import LearningRateScheduler, ModelCheckpoint
+from keras.callbacks import EarlyStopping
 from keras.optimizers import Adam
-from keras.losses import MeanAbsoluteError, MeanSquaredError
-import keras.backend as K
+from keras.losses import MeanSquaredError
+from tqdm.keras import TqdmCallback
 
 from src.time_series_utils import splitTrainValidationTestTimeSeries, reframePastFuture, padPastFuture
 from src.config_reader import ConfigurationReader
+from src.plot import plot_learning_curves
 
 conf = ConfigurationReader("/le_thanh_van_118/workspace/hiep_workspace/air_quality_index_project/model_params.json").data
 
@@ -84,28 +85,6 @@ class Seq2SeqReductionModel(object):
         # Reframe data
         self._X_scaled_reframed, self._y_scaled_reframed = reframePastFuture(scaled_data_padded, self._n_past, self._n_future, keep_label_only=False)
 
-    # Get model information
-    def get_model_info(self):
-        print(self._model.summary())
-        plot_model(self._model, to_file=f'{conf["workspace"]["model_info_dir"]}/{self._model.name}.png', show_shapes=True, dpi=100)
-
-    # Get encoder model information
-    def get_encoder_model_info(self):
-        print(self._encoder_model.summary())
-        plot_model(self._encoder_model, to_file=f'{conf["workspace"]["model_info_dir"]}/{self._encoder_model.name}.png', show_shapes=True, dpi=100)
-
-    # Main execution method
-    def execute(self):
-        # Set logging to ERROR only
-        tf.get_logger().setLevel(logging.ERROR)
-        print(f"{self._class_name}.execute(): is called") if self._verbose else None
-        mae = self._train_model()
-        print(f"{self._class_name}.execute(): mae = {mae}") if self._verbose else None
-        self._encoder_model = self._define_encoder_model()
-        # Set logging to INFO only
-        tf.get_logger().setLevel(logging.INFO)
-        return self._encode_data(), self._save_encoder_model()
-
     # Train and evaluate the model
     def _train_model(self):
         print(f"{self._class_name}._train_model(): is called") if self._verbose else None
@@ -113,23 +92,24 @@ class Seq2SeqReductionModel(object):
                                                                                             self._y_scaled_reframed,
                                                                                             val_percentage = self._val_percentage,
                                                                                             test_percentage = self._test_percentage)
-        #self._model.compile(optimizer=Adam(learning_rate=0.001), loss=MeanAbsoluteError())
+        # Compile model
         self._model.compile(optimizer=Adam(learning_rate=0.001), loss=MeanSquaredError())
-        self._model.fit(X_train, y_train,
+        # Fit model
+        history = self._model.fit(X_train, y_train,
                         epochs=self._epochs,
                         batch_size=self._batch_size,
                         validation_data=(X_val, y_val),
                         shuffle=False,
+                        callbacks = [
+                            EarlyStopping(monitor='val_loss', min_delta=0, patience=5, verbose=1, restore_best_weights=True),
+                            TqdmCallback(verbose=1)
+                        ],
                         verbose=self._verbose)
+        plot_learning_curves(history)
+        # Predict data
         y_predicted= self._model.predict(X_test, verbose=self._verbose)
         mae = self._model.evaluate(y_predicted, y_test, verbose=self._verbose)
         return mae
-
-    # Get save the encoder model and return the path
-    def _save_encoder_model(self):
-        model_path = f'{conf["workspace"]["model_info_dir"]}/{self._encoder_model.name}.keras'
-        self._encoder_model.save(model_path, include_optimizer=True)
-        return model_path
         
     # Reduce dimension with trained Encoder
     def _encode_data(self):
@@ -145,3 +125,32 @@ class Seq2SeqReductionModel(object):
     # Override in derived classes
     def _define_model(self):
         pass
+    
+    # Get model information
+    def dump(self, saved_model_plot_dir):
+        print(self._model.summary())
+        plot_model(self._model, to_file=f'{saved_model_plot_dir}/{self._model.name}.png', show_shapes=True, dpi=100)
+
+    # Get encoder model information
+    def dump_encoder(self, saved_model_plot_dir):
+        print(self._encoder_model.summary())
+        plot_model(self._encoder_model, to_file=f'{saved_model_plot_dir}/{self._encoder_model.name}.png', show_shapes=True, dpi=100)
+
+    # Main execution method
+    def execute(self, saved_model_weight_dir):
+        # Set logging to ERROR only
+        tf.get_logger().setLevel(logging.ERROR)
+        print(f"{self._class_name}.execute(): is called") if self._verbose else None
+        mae = self._train_model()
+        print(f"{self._class_name}.execute(): mae = {mae}") if self._verbose else None
+        self._encoder_model = self._define_encoder_model()
+        # Set logging to INFO only
+        tf.get_logger().setLevel(logging.INFO)
+        # Save model
+        model_path = f"{saved_model_weight_dir}/{self._model.name}.keras"
+        self._model.save(model_path)
+        encoder_model_path = f"{saved_model_weight_dir}/{self._encoder_model.name}.keras"
+        self._encoder_model.save(encoder_model_path)
+        # Return values
+        return self._encode_data(), model_path, encoder_model_path
+

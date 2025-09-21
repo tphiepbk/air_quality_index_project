@@ -3,7 +3,7 @@
 from keras import Input, Model
 from keras.layers import Dense, LSTM, RepeatVector, TimeDistributed
 from keras.optimizers import Adam
-from keras.losses import MeanAbsoluteError
+from keras.losses import MeanSquaredError
 
 from src.reduction_model.base import Seq2SeqReductionModel
 
@@ -44,6 +44,6 @@ class LSTMSeq2SeqReduction(Seq2SeqReductionModel):
         encoder_dense = self._model.layers[3](encoder_outputs)
         # Compile the model
         encoder_lstm_s2s = Model(encoder_inputs, encoder_dense)
-        encoder_lstm_s2s.compile(optimizer=Adam(learning_rate=0.001), loss=MeanAbsoluteError())
+        encoder_lstm_s2s.compile(optimizer=Adam(learning_rate=0.001), loss=MeanSquaredError())
         encoder_lstm_s2s.name = self._model.name + "_encoder"
         return encoder_lstm_s2s
