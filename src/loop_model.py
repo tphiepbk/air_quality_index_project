@@ -11,8 +11,8 @@ def generate_loopresults(X_scaled: pd.DataFrame, y_scaled: pd.DataFrame,
                          range_of_dimension,
                          reduction_model_class,
                          prediction_model_class,
-                         reduction_model_name_prefix="reduction_model_prefix",
-                         prediction_model_name_prefix="prediction_model_prefix",
+                         reduction_model_name_prefix="",
+                         prediction_model_name_prefix="",
                          reduction_n_past=7, reduction_n_future=7,
                          reduction_epochs=50, reduction_batch_size=128,
                          prediction_n_past=7, prediction_n_future=1,
@@ -35,9 +35,12 @@ def generate_loopresults(X_scaled: pd.DataFrame, y_scaled: pd.DataFrame,
     
     # Loop between min and (number of features - 1) to choose what number is the best
     for n in range_of_dimension:
-        reduction_model_name = f"{reduction_model_name_prefix}_{reduction_model_class.get_class_name()}_{n}_features{'with_pm25_3km' if with_pm25_3km == True else ''}"
+        reduction_model_name = "_".join([reduction_model_name_prefix,
+                                         reduction_model_class.get_class_name(),
+                                         f"{n}_features"])
         if with_pm25_3km:
             reduction_model_name = reduction_model_name + "with_pm25_3km_as_feature"
+
         # Apply Seq2seq
         reduction_model = reduction_model_class(X_scaled,
                                         val_percentage=0.2, test_percentage=0.2,
@@ -49,9 +52,12 @@ def generate_loopresults(X_scaled: pd.DataFrame, y_scaled: pd.DataFrame,
         X_encoded, reduction_model_path, encoder_model_path = reduction_model.execute(saved_model_weight_dir)
         reduction_model.dump(saved_model_plot_dir)
         reduction_model.dump_encoder(saved_model_plot_dir)
-        
-        # Prediction
-        prediction_model_name = f"{prediction_model_name_prefix}_{prediction_model_class.get_class_name()}_with_{reduction_model_class.get_class_name()}_{n}_features"
+
+        # Start prediction
+        prediction_model_name = "_".join([prediction_model_name_prefix,
+                                prediction_model_class.get_class_name(),
+                                f"{prediction_n_future}_future",
+                                f"with_{reduction_model_class.get_class_name()}_{n}_features"])
         if with_pm25_3km:
             prediction_model_name = prediction_model_name + "with_pm25_3km_as_feature"
         prediction_model = prediction_model_class(X_encoded, y_scaled,
@@ -71,7 +77,7 @@ def generate_loopresults(X_scaled: pd.DataFrame, y_scaled: pd.DataFrame,
         loopresults[n]["encoder_model_path"] = encoder_model_path
         loopresults[n]["prediction_model_path"] = prediction_model_path
         loopresults[n]["evaluation_data"] = (all_days_inv_y_pred, all_days_inv_y_test)
-
+    
     return loopresults
 
 def choose_the_best(loopresults, metric_to_choose="mae", prediction_n_future=1):

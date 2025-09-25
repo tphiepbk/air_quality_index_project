@@ -58,7 +58,7 @@ This implementation could be applied for any n_past and n_future
 class LSTMPrediction(object):
     # Class attribute
     class_name = 'LSTMPrediction'
-    supported_metrics = ["mae", "mse", "rmse", "r2", "mape", "mnbe", "r"]
+    supported_metrics = ["mae", "mse", "rmse", "r2", "mape", "mnbe", "r_coeff", "p_value"]
 
     # Class method
     @classmethod
@@ -165,7 +165,8 @@ class LSTMPrediction(object):
         all_days_rmse = []
         all_days_mape = []
         all_days_mnbe = []
-        all_days_r = []
+        all_days_r_coeff = []
+        all_days_p_value = []
         
         # In case the y_pred has this shape: (n_predict_samples, n_future),
         # expand the last dimension => (n_predict_samples, n_future, n_label)
@@ -202,10 +203,11 @@ class LSTMPrediction(object):
             mnbe = mean_normalized_bias_error(current_day_inv_y_pred, current_day_inv_y_test)
             all_days_mnbe.append(mnbe)
             
-            r = pearsonr(current_day_inv_y_pred, current_day_inv_y_test)
-            all_days_r.append(r)
+            r_coeff, p_value = pearsonr(current_day_inv_y_pred, current_day_inv_y_test)
+            all_days_r_coeff.append(r_coeff)
+            all_days_p_value.append(p_value)
         
-            print(f"Day {day+1} - mae = {mae}, mse = {mse}, r2 = {r2}, rmse = {rmse}, mape = {mape}, mnbe = {mnbe}, r = {r}") if self._verbose else None
+            print(f"Day {day+1} - mae = {mae}, mse = {mse}, r2 = {r2}, rmse = {rmse}, mape = {mape}, mnbe = {mnbe}, r_coeff = {r_coeff}, p_value = {p_value}") if self._verbose else None
         
         # Convert to NumPy array
         # Output shape:
@@ -218,7 +220,8 @@ class LSTMPrediction(object):
         all_days_rmse = np.array(all_days_rmse)
         all_days_mape = np.array(all_days_mape)
         all_days_mnbe = np.array(all_days_mnbe)
-        all_days_r = np.array(all_days_r)
+        all_days_r_coeff = np.array(all_days_r_coeff)
+        all_days_p_value = np.array(all_days_p_value)
         
         all_days_inv_y_pred = np.array(all_days_inv_y_pred)
         all_days_inv_y_test = np.array(all_days_inv_y_test)
@@ -236,8 +239,10 @@ class LSTMPrediction(object):
         print(f"avg_mape = {avg_mape}") if self._verbose else None
         avg_mnbe = np.average(all_days_mnbe)
         print(f"avg_mnbe = {avg_mnbe}") if self._verbose else None
-        avg_r = np.average(all_days_r)
-        print(f"avg_r = {avg_r}") if self._verbose else None
+        avg_r_coeff = np.average(all_days_r_coeff)
+        print(f"avg_r_coeff = {avg_r_coeff}") if self._verbose else None
+        avg_p_value = np.average(all_days_p_value)
+        print(f"avg_p_value = {avg_p_value}") if self._verbose else None
 
         metrics = {
             "mae": (all_days_mae, avg_mae),
@@ -246,7 +251,8 @@ class LSTMPrediction(object):
             "r2": (all_days_r2, avg_r2),
             "mape": (all_days_mape, avg_mape),
             "mnbe": (all_days_mnbe, avg_mnbe),
-            "r": (all_days_r, avg_r),
+            "r_coeff": (all_days_r_coeff, avg_r_coeff),
+            "p_value": (all_days_p_value, avg_p_value),
         }
         
         # Return the avarage metrics of all days and the metrics of each day also
