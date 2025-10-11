@@ -38,7 +38,7 @@
         "saved_model_plot_dir": "/le_thanh_van_118/workspace/hiep_workspace/saved_model_plot",
         "saved_model_weight_dir": "/le_thanh_van_118/workspace/hiep_workspace/saved_model_weight",
         "saved_data_scaler_dir": "/le_thanh_van_118/workspace/hiep_workspace/saved_data_scaler",
-        "best_model_weight_dir": "/le_thanh_van_118/workspace/hiep_workspace/best_model_weight_dir",
+        "best_model_weight_dir": "/le_thanh_van_118/workspace/hiep_workspace/best_model_weight",
         "best_reduced_data_dir": "/le_thanh_van_118/workspace/hiep_workspace/best_reduced_data",
         "data_by_location_dir": "/le_thanh_van_118/workspace/hiep_workspace/data_by_location",
         "data_by_station_dir": "/le_thanh_van_118/workspace/hiep_workspace/data_by_station",
@@ -59,14 +59,14 @@
         "min_number_of_features": 10
     },
     "prediction_cmaq": {
-        "n_past": 24,
+        "n_past": 168,
         "n_future": 1,
         "epochs": 200,
         "batch_size": 128
     },
     "reduction_cmaq": {
-        "n_past": 24,
-        "n_future": 24,
+        "n_past": 168,
+        "n_future": 168,
         "epochs": 200,
         "batch_size": 128,
         "min_number_of_features": 2

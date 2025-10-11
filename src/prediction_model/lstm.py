@@ -58,7 +58,14 @@ This implementation could be applied for any n_past and n_future
 class LSTMPrediction(object):
     # Class attribute
     class_name = 'LSTMPrediction'
-    supported_metrics = ["mae", "mse", "rmse", "r2", "mape", "mnbe", "r_coeff", "p_value"]
+    supported_metrics = {"mae": mean_absolute_error,
+                         "mse": mean_squared_error,
+                         "rmse": root_mean_squared_error,
+                         "r2": r2_score,
+                         "mape": mean_absolute_percentage_error,
+                         "mnbe": mean_normalized_bias_error,
+                         "r_coeff": pearsonr,
+                         "p_value": pearsonr}
 
     # Class method
     @classmethod
@@ -155,114 +162,52 @@ class LSTMPrediction(object):
 
     # Evaluate the model
     def _evaluate_model(self, y_pred, y_test):
-        # The scaling inverted of the y_test and y_pred of all days (n_future)
-        all_days_inv_y_test, all_days_inv_y_pred = [], []
-        
-        # The MAE, MSE, R2 of all days
-        all_days_mae = []
-        all_days_mse = []
-        all_days_r2 = []
-        all_days_rmse = []
-        all_days_mape = []
-        all_days_mnbe = []
-        all_days_r_coeff = []
-        all_days_p_value = []
-        
-        # In case the y_pred has this shape: (n_predict_samples, n_future),
-        # expand the last dimension => (n_predict_samples, n_future, n_label)
-        # n_label should be 1
-        if len(y_pred.shape) < 3:
-            y_pred = np.expand_dims(y_pred, axis=-1)
-        
+        # Shape of y_pred and y_test should be (n_predict_samples, n_future, n_label),
+        # where n_label should be 1
         print(f"y_pred.shape = {y_pred.shape}\ny_test.shape = {y_test.shape}") if self._verbose else None
         
+        # A dictionary containing all metrics
+        # For each metric type, the first element is a list of all days' metric,
+        # while the second element is the average value of all days, but we will update it later
+        metrics = {metric: [] for metric in LSTMPrediction.get_supported_metrics().keys()}
+        print(f"Initialize metrics = {metrics}") if self._verbose else None
+
+        # Inverse transform
+        inv_y_pred = self._label_scaler.inverse_transform(np.squeeze(y_pred, axis=-1))
+        inv_y_test = self._label_scaler.inverse_transform(np.squeeze(y_test, axis=-1))
+        print(f"inv_y_pred.shape = {inv_y_pred.shape}, inv_y_test.shape = {inv_y_test.shape}") if self._verbose else None
+
+        # Calculate metrics for all days
         for day in range(self._n_future):
-            current_day_y_pred = y_pred[:,day]
-            current_day_inv_y_pred = self._label_scaler.inverse_transform(current_day_y_pred)
-            all_days_inv_y_pred.append(current_day_inv_y_pred)
-            
-            current_day_y_test = y_test[:,day]
-            current_day_inv_y_test = self._label_scaler.inverse_transform(current_day_y_test)
-            all_days_inv_y_test.append(current_day_inv_y_test)
-    
-            mae = mean_absolute_error(current_day_inv_y_pred, current_day_inv_y_test)
-            all_days_mae.append(mae)
-    
-            mse = mean_squared_error(current_day_inv_y_pred, current_day_inv_y_test)
-            all_days_mse.append(mse)
-    
-            r2 = r2_score(current_day_inv_y_pred, current_day_inv_y_test)
-            all_days_r2.append(r2)
+            current_day_inv_y_pred = inv_y_pred[:, day]
+            current_day_inv_y_test = inv_y_test[:, day]
 
-            rmse = root_mean_squared_error(current_day_inv_y_pred, current_day_inv_y_test)
-            all_days_rmse.append(rmse)
-            
-            mape = mean_absolute_percentage_error(current_day_inv_y_pred, current_day_inv_y_test)
-            all_days_mape.append(mape)
+            print(f"Day {day+1}:") if self._verbose else None
+            for metric_type, calculator in LSTMPrediction.get_supported_metrics().items():
+                calculated_metric_value = calculator(current_day_inv_y_pred, current_day_inv_y_test)
+                
+                if metric_type == "r_coeff":
+                    calculated_metric_value = calculated_metric_value[0]
+                elif metric_type == "p_value":
+                    calculated_metric_value = calculated_metric_value[1]
+                    
+                metrics[metric_type].append(calculated_metric_value)
+                print(f"\t{metric_type} = {calculated_metric_value}") if self._verbose else None
 
-            mnbe = mean_normalized_bias_error(current_day_inv_y_pred, current_day_inv_y_test)
-            all_days_mnbe.append(mnbe)
-            
-            r_coeff, p_value = pearsonr(current_day_inv_y_pred, current_day_inv_y_test)
-            all_days_r_coeff.append(r_coeff)
-            all_days_p_value.append(p_value)
-        
-            print(f"Day {day+1} - mae = {mae}, mse = {mse}, r2 = {r2}, rmse = {rmse}, mape = {mape}, mnbe = {mnbe}, r_coeff = {r_coeff}, p_value = {p_value}") if self._verbose else None
-        
-        # Convert to NumPy array
-        # Output shape:
-        #   - all_days_mae: (n_future,)
-        #   - all_days_inv_y_pred: (n_future, n_predict_samples, n_label)
-        #   - all_days_inv_y_test: (n_future, n_test_samples, n_label)
-        all_days_mae = np.array(all_days_mae)
-        all_days_mse = np.array(all_days_mse)
-        all_days_r2 = np.array(all_days_r2)
-        all_days_rmse = np.array(all_days_rmse)
-        all_days_mape = np.array(all_days_mape)
-        all_days_mnbe = np.array(all_days_mnbe)
-        all_days_r_coeff = np.array(all_days_r_coeff)
-        all_days_p_value = np.array(all_days_p_value)
-        
-        all_days_inv_y_pred = np.array(all_days_inv_y_pred)
-        all_days_inv_y_test = np.array(all_days_inv_y_test)
-        
-        # Calculate the average MAE, MSE, R2 of all days
-        avg_mae = np.average(all_days_mae)
-        print(f"avg_mae = {avg_mae}") if self._verbose else None
-        avg_mse = np.average(all_days_mse)
-        print(f"avg_mse = {avg_mse}") if self._verbose else None
-        avg_r2 = np.average(all_days_r2)
-        print(f"avg_r2 = {avg_r2}") if self._verbose else None
-        avg_rmse = np.average(all_days_rmse)
-        print(f"avg_rmse = {avg_rmse}") if self._verbose else None
-        avg_mape = np.average(all_days_mape)
-        print(f"avg_mape = {avg_mape}") if self._verbose else None
-        avg_mnbe = np.average(all_days_mnbe)
-        print(f"avg_mnbe = {avg_mnbe}") if self._verbose else None
-        avg_r_coeff = np.average(all_days_r_coeff)
-        print(f"avg_r_coeff = {avg_r_coeff}") if self._verbose else None
-        avg_p_value = np.average(all_days_p_value)
-        print(f"avg_p_value = {avg_p_value}") if self._verbose else None
-
-        metrics = {
-            "mae": (all_days_mae, avg_mae),
-            "mse": (all_days_mse, avg_mse),
-            "rmse": (all_days_rmse, avg_rmse),
-            "r2": (all_days_r2, avg_r2),
-            "mape": (all_days_mape, avg_mape),
-            "mnbe": (all_days_mnbe, avg_mnbe),
-            "r_coeff": (all_days_r_coeff, avg_r_coeff),
-            "p_value": (all_days_p_value, avg_p_value),
-        }
+        # Calculate average metrics and update the metrics dictionary
+        for metric_type, all_days_metric in metrics.items():
+            avg_metric_value = np.average(np.array(all_days_metric))
+            metrics[metric_type] = (all_days_metric, avg_metric_value)
+            print(f"avg_{metric_type} = {avg_metric_value}") if self._verbose else None
         
         # Return the avarage metrics of all days and the metrics of each day also
         # Return the inverted y_test and y_pred of each day also
-        return all_days_inv_y_pred, all_days_inv_y_test, metrics
+        # return all_days_inv_y_pred, all_days_inv_y_test, metrics
+        return inv_y_pred, inv_y_test, metrics
 
     # Get model information
     def dump(self, saved_model_plot_dir):
         print(self._model.summary())
-        plot_model(self._model, to_file=f'{saved_model_plot_dir}/{self._model.name}.png', show_shapes=True, dpi=100)
         
     # Main execution method
     def execute(self, saved_model_weight_dir):
@@ -278,7 +223,7 @@ class LSTMPrediction(object):
         self._model.save(model_path, include_optimizer=True)
         # Return the evaluation model        
         return *self._evaluate_model(y_predicted, y_test_reframed), model_path
-        
+
 # ==========================================================================================
 
 '''
@@ -315,86 +260,3 @@ def inferenceLSTM(X, y, n_past=1, n_future=1, saved_model_weight_dir=".", verbos
     y_pred = saved_model.predict(X_reframed, verbose=verbose)
     print("=" * 100) if verbose else None
     return y_pred
-
-# ==========================================================================================
-
-'''
-Receive the encoded features and labels as inputs
-This implementation could be applied for any n_past and n_future
-Do not split to train test, just predict the encoded data
-Return the predicted label values
-'''
-'''
-def predictLSTMNoSplit(X, y, n_past=1, n_future=1, epochs=10, batch_size=64, verbose=0, model_name="lstm"):
-    # Set logging to ERROR only
-    tf.get_logger().setLevel(logging.ERROR)
-
-    # Padding
-    X = padPastFuture(X, n_past, n_future)
-    y = padPastFuture(y, n_past, n_future)
-    
-    # Convert to numpy array
-    if isinstance(X, pd.DataFrame):
-        X = X.to_numpy()
-    if isinstance(y, pd.DataFrame):
-        y = y.to_numpy()
-    
-    # Combine X and y, y should be the last column
-    combined_X_y = np.concatenate((X, y), axis=1)
-    combined_df = pd.DataFrame(combined_X_y)
-    
-    # Reframe the dataset to past-future form
-    # Output shape:
-    #   - n_samples_reframed = n_samples - n_past - n_future + 1
-    #   - n_features_label = n_features + n_label
-    #   - X_reframed: [n_samples_reframed, n_past, n_features_label]
-    #   - y_reframed: [n_samples_reframed, n_future, n_label]
-    X_reframed, y_reframed = reframePastFuture(combined_df, n_past, n_future, keep_label_only=True)
-    
-    # Define model checkpoint
-    checkpoint = ModelCheckpoint(filepath=f'{conf["workspace"]["model_checkpoints_dir"]}/{model_name}.keras', save_best_only=True)
-    
-    # Define LSTM model
-    # Input shape: (n_past, n_features)
-    # Output: (n_future, n_label)
-    n_features, n_label = X_reframed.shape[-1], y_reframed.shape[-1]
-    
-    # Define layers
-    model = Sequential()
-    encoder_input = Input(shape=(n_past, n_features))
-    encoder_lstm, state_h, state_c = LSTM(64, activation="relu", return_state=True)(encoder_input)
-    decoder_input = RepeatVector(n_future)(encoder_lstm)
-    decoder_lstm = LSTM(64, activation="relu", return_sequences=True)(decoder_input, initial_state = [state_h, state_c])
-    dropout_2 = Dropout(0.2)(decoder_lstm)
-    #decoder_dense_1 = TimeDistributed(Dense(32, activation="relu"))(dropout_2)
-    #decoder_dense_2 = TimeDistributed(Dense(n_label))(decoder_dense_1)
-    #model = Model(encoder_input, decoder_dense_2)
-    decoder_dense = TimeDistributed(Dense(n_label))(dropout_2)
-    model = Model(encoder_input, decoder_dense)
-    
-    # Compile model
-    #model.compile(loss=MeanAbsoluteError(), optimizer=Adam(learning_rate=0.001))
-    model.compile(loss=MeanSquaredError(), optimizer=Adam(learning_rate=0.001))
-    model.name = model_name
-    print(model.summary()) if verbose else None
-    plot_model(model, to_file=f'{conf["workspace"]["model_info_dir"]}/{model_name}.png', show_shapes=True, dpi=100)
-    
-    # Fit model
-    if verbose:
-        print(f"Training model {model_name}...")
-    model.fit(X_reframed, y_reframed,
-            epochs=epochs,
-            batch_size=batch_size,
-            verbose=verbose,
-            callbacks=[checkpoint],
-            shuffle=False)
-    print("=" * 100) if verbose else None
-    
-    # Prediction
-    # The shape of y_pred should be [n_predicted_samples, n_future, n_label]
-    print(f"Predicting using model {model_name}...") if verbose else None
-    y_pred = model.predict(X_reframed, verbose=verbose)
-    print("=" * 100) if verbose else None
-    
-    return y_pred
-'''

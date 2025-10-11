@@ -21,6 +21,7 @@ class CNNLSTMSeq2SeqReduction(Seq2SeqReductionModel):
         print(f"{self.__class__.class_name}._define_model(): is called") if self._verbose else None
         # Encoder layers
         encoder_inputs = Input(shape=(self._n_past, self._n_features))
+        '''
         encoder_cnn_1 = Conv1D(filters=24, kernel_size=3, activation="relu")(encoder_inputs)
         encoder_cnn_2 = Conv1D(filters=12, kernel_size=3, activation="relu")(encoder_cnn_1)
         encoder_max_pooling = MaxPooling1D(pool_size=2)(encoder_cnn_2)
@@ -34,6 +35,29 @@ class CNNLSTMSeq2SeqReduction(Seq2SeqReductionModel):
         decoder_lstm_1 = LSTM(50, return_sequences=True, activation="relu")(decoder_repeat_vector, initial_state=[state_h, state_c])
         decoder_dense_1 = TimeDistributed(Dense(24, activation="relu"))(decoder_lstm_1)
         decoder_outputs = TimeDistributed(Dense(self._n_features))(decoder_dense_1)
+        '''
+        encoder_cnn_1 = Conv1D(filters=128, kernel_size=2, activation="relu")(encoder_inputs)
+        encoder_max_pooling_1 = MaxPooling1D(pool_size=2)(encoder_cnn_1)
+        encoder_cnn_2 = Conv1D(filters=64, kernel_size=2, activation="relu")(encoder_max_pooling_1)
+        encoder_max_pooling_2 = MaxPooling1D(pool_size=2)(encoder_cnn_2)
+        encoder_flatten = Flatten()(encoder_max_pooling_2)
+        encoder_repeat_vector = RepeatVector(self._n_future)(encoder_flatten)
+        #encoder_flatten = TimeDistributed(Flatten())(encoder_max_pooling_2)
+        #encoder_lstm_1 = LSTM(100, return_sequences=True, activation="relu")(encoder_flatten)
+        encoder_lstm_1 = LSTM(100, return_sequences=True, activation="relu")(encoder_repeat_vector)
+        encoder_outputs, state_h, state_c = LSTM(50, return_state=True, activation="relu")(encoder_lstm_1)
+        encoder_dense = Dense(self._latent_dim)(encoder_outputs)
+        # Repeat layer
+        decoder_repeat_vector = RepeatVector(self._n_future)(encoder_dense)
+        # Decoder layer
+        decoder_lstm_1 = LSTM(50, return_sequences=True, activation="relu")(decoder_repeat_vector, initial_state=[state_h, state_c])
+        decoder_lstm_2 = LSTM(100, return_sequences=True, activation="relu")(decoder_lstm_1)
+        decoder_cnn_1 = Conv1D(filters=64, kernel_size=2, activation="relu")(decoder_lstm_2)
+        decoder_max_pooling_1 = MaxPooling1D(pool_size=2)(encoder_cnn_1)
+        decoder_cnn_2 = Conv1D(filters=128, kernel_size=2, activation="relu")(encoder_max_pooling_1)
+        decoder_max_pooling_2 = MaxPooling1D(pool_size=2)(encoder_cnn_2)
+        decoder_dense_1 = TimeDistributed(Dense(24, activation="relu"))(decoder_lstm_2)
+        decoder_outputs = TimeDistributed(Dense(self._n_features))(decoder_dense_1)
         # Compile the model
         cnn_lstm_seq2seq = Model(encoder_inputs, decoder_outputs)
         return cnn_lstm_seq2seq
@@ -43,6 +67,7 @@ class CNNLSTMSeq2SeqReduction(Seq2SeqReductionModel):
         print(f"{self.__class__.class_name}._define_encoder_model(): is called") if self._verbose else None
         # Encoder only
         encoder_inputs = Input(shape=(self._n_past, self._n_features))
+        '''
         encoder_cnn_1 = self._model.layers[1](encoder_inputs)
         encoder_cnn_2 = self._model.layers[2](encoder_cnn_1)
         encoder_max_pooling = self._model.layers[3](encoder_cnn_2)
@@ -50,6 +75,16 @@ class CNNLSTMSeq2SeqReduction(Seq2SeqReductionModel):
         encoder_repeat_vector = self._model.layers[5](encoder_flatten)
         encoder_outputs, _, _ = self._model.layers[6](encoder_repeat_vector)
         encoder_dense = self._model.layers[7](encoder_outputs)
+        '''
+        encoder_cnn_1 = self._model.layers[1](encoder_inputs)
+        encoder_max_pooling_1 = self._model.layers[2](encoder_cnn_1)
+        encoder_cnn_2 = self._model.layers[3](encoder_max_pooling_1)
+        encoder_max_pooling_2 = self._model.layers[4](encoder_cnn_2)
+        encoder_flatten = self._model.layers[5](encoder_max_pooling_2)
+        encoder_repeat_vector = self._model.layers[6](encoder_flatten)
+        encoder_lstm_1 = self._model.layers[7](encoder_repeat_vector)
+        encoder_outputs, _, _ = self._model.layers[8](encoder_lstm_1)
+        encoder_dense = self._model.layers[9](encoder_outputs)
         # Compile the model
         encoder_cnn_lstm_s2s = Model(encoder_inputs, encoder_dense)
         encoder_cnn_lstm_s2s.compile(optimizer=Adam(), loss=MeanSquaredError())

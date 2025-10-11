@@ -36,3 +36,8 @@ if [ ! -d "quan-trac" ]; then
     gdown 1XSmmzj5T6kf3Km-s_gUG_NFdXEpKDKat
     tar xzf "quan-trac.tar.gz"
 fi
+
+# CMAQ dataset with NO
+if [ ! -f "joined_left_CMAQ.csv" ]; then
+    gdown 1zzCgKM8MdAkKbT21zw50lgb1LxG7ACjW
+fi

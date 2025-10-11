@@ -37,6 +37,7 @@ def generate_loopresults(X_scaled: pd.DataFrame, y_scaled: pd.DataFrame,
     for n in range_of_dimension:
         reduction_model_name = "_".join([reduction_model_name_prefix,
                                          reduction_model_class.get_class_name(),
+                                         f"{prediction_n_future}_future",
                                          f"{n}_features"])
         if with_pm25_3km:
             reduction_model_name = reduction_model_name + "with_pm25_3km_as_feature"
