@@ -41,3 +41,9 @@ fi
 if [ ! -f "joined_left_CMAQ.csv" ]; then
     gdown 1zzCgKM8MdAkKbT21zw50lgb1LxG7ACjW
 fi
+
+# Merged data
+if [ ! -d "merged-data" ]; then
+    gdown 1d3eU3Qn0kAm_3jaRHJIZ8uw2ANS4-jxH
+    unzip "merged-data-20251012T144615Z-1-001.zip"
+fi
