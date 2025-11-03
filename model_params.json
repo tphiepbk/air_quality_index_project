@@ -61,14 +61,14 @@
     "prediction_cmaq": {
         "n_past": 168,
         "n_future": 1,
-        "epochs": 200,
-        "batch_size": 128
+        "epochs": 5,
+        "batch_size": 32
     },
     "reduction_cmaq": {
         "n_past": 168,
         "n_future": 168,
-        "epochs": 200,
-        "batch_size": 128,
+        "epochs": 5,
+        "batch_size": 32,
         "min_number_of_features": 2
     }
 }
