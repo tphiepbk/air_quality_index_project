@@ -1,6 +1,14 @@
 # Author: tphiepbk
 
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+
+# ==========================================================================================
+
+def plot_xy(x, y, figsize=(20, 7)):
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.plot(x, y)
+    plt.show()
 
 # ==========================================================================================
 
@@ -12,7 +20,6 @@ def plot_1_data(data, datalabel="label", xlabel="xlabel", ylabel="ylabel", figsi
     plt.ylabel(ylabel, size=15)
     plt.xlabel(xlabel, size=15)
     plt.legend(fontsize=15)
-    plt.tight_layout()
     plt.show()
 
 # ==========================================================================================
