@@ -88,6 +88,38 @@ def train_test_validation_split(X, y, train_ratio=0.7, val_ratio=0.15):
 
 # ==========================================================================================
 
+# Filter dates which have more than 10 records
+# Resampled by date, using mean
+# Calculate mnbe
+def mnbe_avg(y_test_sid, y_pred_sid, meta_test_date_sid):
+    threshold = 10
+    uniq_date = list(meta_test_date_sid.apply(lambda x: x.date()).unique())
+    resampled_y_test = {"date": [], "target": []}
+    resampled_y_pred = {"date": [], "target": []}
+    print(f"uniq_date = {uniq_date}")
+    for d in uniq_date:
+        current_date_meta_test_sid = meta_test_date_sid[meta_test_date_sid.dt.date == d]
+        current_date_y_test_sid = y_test_sid.loc[current_date_meta_test_sid.index]
+        current_date_y_pred_sid = y_pred_sid.loc[current_date_meta_test_sid.index]
+        assert len(current_date_y_test_sid) == len(current_date_y_pred_sid), "current_date_y_test_sid is not equal to current_date_y_pred_sid"
+        current_date_num_records = len(current_date_meta_test_sid)
+        print(f"Current date = {d}, number of records = {current_date_num_records}")
+        if current_date_num_records >= threshold:
+            resampled_y_test["date"].append(d)
+            resampled_y_test["target"].append(current_date_y_test_sid.mean())
+            resampled_y_pred["date"].append(d)
+            resampled_y_pred["target"].append(current_date_y_pred_sid.mean())
+
+    resampled_y_test = pd.DataFrame(resampled_y_test)
+    resampled_y_pred = pd.DataFrame(resampled_y_pred)
+
+    display(resampled_y_test)
+    display(resampled_y_pred)
+
+    #return np.mean((resampled_y_test["target"] - resampled_y_pred["target"]) / resampled_y_test["target"])
+    return np.mean((resampled_y_test["target"] - resampled_y_pred["target"]) / resampled_y_test["target"]) * 100.0
+
+# This function receive y_true and y_pred for each station
 def compute_metrics(y_true, y_pred):
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
@@ -99,7 +131,8 @@ def compute_metrics(y_true, y_pred):
     yt_nonzero = np.where(y_true == 0, np.nan, y_true)
     
     # MNBE
-    mnbe = np.nanmean((y_true - y_pred) / yt_nonzero)
+    mnbe = np.nanmean((y_true - y_pred) / yt_nonzero) * 100.0
+    #mnbe = np.nanmean((y_true - y_pred) / yt_nonzero)
 
     # MAPE
     mape = np.nanmean((np.abs((y_true - y_pred) / yt_nonzero)) * 100.0)
@@ -203,6 +236,12 @@ def train_lgbm_for_horizon(df_feat,
     rows = []
     for sid, grp in df_test_res.groupby("station_id"):
         m = compute_metrics(grp["y_true"], grp["y_pred"])
+        print(f"sid = {sid}, grp = {grp}")
+
+        # Calculate avg mnbe
+        avg_mnbe = mnbe_avg(grp["y_true"], grp["y_pred"], grp["date"])
+        m["avg_mnbe"] = round(avg_mnbe, 2)
+
         rows.append({"station": int(sid), "horizon_h": horizon_h,**m})
     metrics_by_station = pd.DataFrame(rows)
 
