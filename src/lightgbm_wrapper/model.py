@@ -120,7 +120,7 @@ def mnbe_avg(y_test_sid, y_pred_sid, meta_test_date_sid):
     return np.mean((resampled_y_test["target"] - resampled_y_pred["target"]) / resampled_y_test["target"]) * 100.0
 
 # This function receive y_true and y_pred for each station
-def compute_metrics(y_true, y_pred):
+def compute_metrics(y_true, y_pred, calibrate=False):
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
 
@@ -131,11 +131,25 @@ def compute_metrics(y_true, y_pred):
     yt_nonzero = np.where(y_true == 0, np.nan, y_true)
     
     # MNBE
-    mnbe = np.nanmean((y_true - y_pred) / yt_nonzero) * 100.0
     #mnbe = np.nanmean((y_true - y_pred) / yt_nonzero)
+    if calibrate == True:
+        from sklearn.linear_model import LinearRegression
+        reg = LinearRegression()
+        reg.fit(y_pred.reshape(-1,1), yt_nonzero)
+        a = reg.intercept_
+        b = reg.coef_[0]
+        y_pred_corr = a + b * y_pred
+        print("[hiepdebug] calibrating mnbe...")
+        mnbe = np.nanmean((yt_nonzero - y_pred_corr) / yt_nonzero) * 100.0
+        print("[hiepdebug]  y_pred...")
+        display(y_pred)
+        print("[hiepdebug]  y_pred_corr...")
+        display(y_pred_corr)
+    else:
+        mnbe = np.nanmean((yt_nonzero - y_pred) / yt_nonzero) * 100.0
 
     # MAPE
-    mape = np.nanmean((np.abs((y_true - y_pred) / yt_nonzero)) * 100.0)
+    mape = np.nanmean((np.abs((yt_nonzero - y_pred) / yt_nonzero)) * 100.0)
 
     # Pearson r (with standard deviation check)
     if np.std(y_true) < 1e-6 or np.std(y_pred) < 1e-6:
@@ -170,7 +184,8 @@ def train_lgbm_for_horizon(df_feat,
                            target_col,
                            learning_rate=0.05,
                            n_estimators=2000,
-                           early_stopping_rounds=100):
+                           early_stopping_rounds=100,
+                           calibrate=False):
 
     # Build supervised dataset
     X, y = build_supervised_for_horizon(df_feat, horizon_h=horizon_h, target_col=target_col)
@@ -201,6 +216,7 @@ def train_lgbm_for_horizon(df_feat,
         "objective": "regression",
         "metric": "rmse",
         "learning_rate": learning_rate,
+        #"num_leaves": 63,
         "num_leaves": 63,
         "feature_fraction": 0.9,
         "bagging_fraction": 0.8,
@@ -226,7 +242,7 @@ def train_lgbm_for_horizon(df_feat,
 
     # Prediction
     y_pred = np.expand_dims(model.predict(X_test, num_iteration=model.best_iteration), axis=-1)
-    metrics_overall = compute_metrics(y_test, y_pred)
+    metrics_overall = compute_metrics(y_test, y_pred, calibrate)
 
     # Metrics for each station
     df_test_res = meta_test.copy()
@@ -235,7 +251,7 @@ def train_lgbm_for_horizon(df_feat,
 
     rows = []
     for sid, grp in df_test_res.groupby("station_id"):
-        m = compute_metrics(grp["y_true"], grp["y_pred"])
+        m = compute_metrics(grp["y_true"], grp["y_pred"], calibrate)
         print(f"sid = {sid}, grp = {grp}")
 
         # Calculate avg mnbe
