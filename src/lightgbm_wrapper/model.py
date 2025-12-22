@@ -216,7 +216,6 @@ def train_lgbm_for_horizon(df_feat,
         "objective": "regression",
         "metric": "rmse",
         "learning_rate": learning_rate,
-        #"num_leaves": 63,
         "num_leaves": 63,
         "feature_fraction": 0.9,
         "bagging_fraction": 0.8,
@@ -242,6 +241,7 @@ def train_lgbm_for_horizon(df_feat,
 
     # Prediction
     y_pred = np.expand_dims(model.predict(X_test, num_iteration=model.best_iteration), axis=-1)
+    print(f"y_pred.shape: {y_pred.shape}")
     metrics_overall = compute_metrics(y_test, y_pred, calibrate)
 
     # Metrics for each station
@@ -279,13 +279,18 @@ def plot_timeseries_example(df, model, horizon_h, station_id, target_col, n_poin
     X_test_sid = X_test[mask]
     y_test_sid = y_test[mask]
     meta_sid = meta_test[mask]
+    
+    print(f"X_test_sid.shape: {X_test_sid.shape}")
+    print(f"y_test_sid.shape: {y_test_sid.shape}")
+    
     if len(X_test_sid) == 0:
         print(f"No test sample for station {station_id}")
         return
     
     # Prediction
     y_pred_sid = model.predict(X_test_sid, num_iteration=getattr(model, "best_iteration", None))
-
+    print(f"y_pred_sid.shape: {y_pred_sid.shape}")
+    
     # Plotting
     X_plot = meta_sid.iloc[-n_points:]
     y_true_plot = y_test_sid.iloc[-n_points:]
