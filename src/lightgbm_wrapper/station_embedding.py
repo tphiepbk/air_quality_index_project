@@ -22,8 +22,7 @@ def learn_station_embeddings(df_feat,
                              lr=EMBED_LR,
                              batch_size=EMBED_BS,
                              weight_decay=EMBED_WD,
-                             seed=RANDOM_STATE,
-                             LIGHTGBM_DIR="."):
+                             seed=RANDOM_STATE):
     torch.manual_seed(seed)
 
     df_e = df_feat[[station_col, target_col]].dropna().copy()
@@ -97,25 +96,22 @@ def learn_station_embeddings(df_feat,
     if best_state is not None:
         model.load_state_dict(best_state)
 
-    # Save the model
-    torch.save(model.state_dict(), os.path.join(LIGHTGBM_DIR, f"{target_col}_station_embedding.pt"))
-
     # Get the embedding matrix
     # shape (n_station, embed_dim)
     emb_weight = model.emb.weight.detach().cpu().numpy()
 
     # Create dictionary look up: station_id => vector
-    embed_lookup = {sid: emb_weight[id2idx[sid]] for sid in uniq_ids}
+    embed_lookup = {sid: list(emb_weight[id2idx[sid]]) for sid in uniq_ids}
 
     return embed_lookup, uniq_ids
 
 def attach_station_embedding(df, lookup, station_col="station_id", prefix="station_emb"):
     df = df.copy()
-    # mean embedding dùng cho trạm lạ (nếu có)
+    # Mean embedding used for unknown station
     mean_emb = np.mean(np.stack(list(lookup.values())), axis=0)
 
     emb_cols = [f"{prefix}_{i}" for i in range(len(mean_emb))]
-    # tạo ma trận embedding theo từng dòng
+    # Create embedding matrix for each row
     embs = []
     for sid in df[station_col].astype(int).values:
         embs.append(lookup.get(sid, mean_emb))
