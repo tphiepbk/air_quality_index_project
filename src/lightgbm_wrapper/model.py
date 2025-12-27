@@ -39,6 +39,47 @@ def build_supervised_for_horizon(df, horizon_h, target_col):
 
 # ==========================================================================================
 
+# Split train/test for each station
+def train_test_split(X, y, train_ratio=0.8):
+    assert (X["date"].equals(y["date"]) and X["station_id"].equals(y["station_id"])), "X and y should have the same metadata values"
+
+    X_train, y_train, X_test, y_test = [], [], [], []
+    meta_train, meta_test = [], []
+
+    meta_cols = ["date", "station_id"]
+    
+    for station in list(sorted(X["station_id"].unique())):
+        X_station = X[X["station_id"] == station]
+        y_station = y[y["station_id"] == station]
+        meta = X_station[meta_cols]
+
+        X_station = X_station.drop(columns=meta_cols)
+        y_station = y_station.drop(columns=meta_cols)
+    
+        n = len(X_station)
+        train_end = int(n * train_ratio)
+    
+        X_train.append(X_station.iloc[:train_end])
+        y_train.append(y_station.iloc[:train_end])
+        meta_train.append(meta.iloc[:train_end])
+    
+        X_test.append(X_station.iloc[train_end:])
+        y_test.append(y_station.iloc[train_end:])
+        meta_test.append(meta.iloc[train_end:])
+
+    X_train = pd.concat(X_train, axis=0)
+    X_test = pd.concat(X_test, axis=0)
+    
+    y_train = pd.concat(y_train, axis=0)
+    y_test = pd.concat(y_test, axis=0)
+    
+    meta_train = pd.concat(meta_train, axis=0)
+    meta_test = pd.concat(meta_test, axis=0)
+
+    return (X_train, y_train, meta_train, X_test, y_test, meta_test)
+
+# ==========================================================================================
+
 # Split train/val/test for each station
 def train_test_validation_split(X, y, train_ratio=0.7, val_ratio=0.15):
     assert (X["date"].equals(y["date"]) and X["station_id"].equals(y["station_id"])), "X and y should have the same metadata values"
@@ -96,14 +137,14 @@ def mnbe_avg(y_test_sid, y_pred_sid, meta_test_date_sid):
     uniq_date = list(meta_test_date_sid.apply(lambda x: x.date()).unique())
     resampled_y_test = {"date": [], "target": []}
     resampled_y_pred = {"date": [], "target": []}
-    print(f"uniq_date = {uniq_date}")
+    #print(f"uniq_date = {uniq_date}")
     for d in uniq_date:
         current_date_meta_test_sid = meta_test_date_sid[meta_test_date_sid.dt.date == d]
         current_date_y_test_sid = y_test_sid.loc[current_date_meta_test_sid.index]
         current_date_y_pred_sid = y_pred_sid.loc[current_date_meta_test_sid.index]
         assert len(current_date_y_test_sid) == len(current_date_y_pred_sid), "current_date_y_test_sid is not equal to current_date_y_pred_sid"
         current_date_num_records = len(current_date_meta_test_sid)
-        print(f"Current date = {d}, number of records = {current_date_num_records}")
+        #print(f"Current date = {d}, number of records = {current_date_num_records}")
         if current_date_num_records >= threshold:
             resampled_y_test["date"].append(d)
             resampled_y_test["target"].append(current_date_y_test_sid.mean())
@@ -113,8 +154,8 @@ def mnbe_avg(y_test_sid, y_pred_sid, meta_test_date_sid):
     resampled_y_test = pd.DataFrame(resampled_y_test)
     resampled_y_pred = pd.DataFrame(resampled_y_pred)
 
-    display(resampled_y_test)
-    display(resampled_y_pred)
+    #display(resampled_y_test)
+    #display(resampled_y_pred)
 
     #return np.mean((resampled_y_test["target"] - resampled_y_pred["target"]) / resampled_y_test["target"])
     return np.mean((resampled_y_test["target"] - resampled_y_pred["target"]) / resampled_y_test["target"]) * 100.0
@@ -139,12 +180,7 @@ def compute_metrics(y_true, y_pred, calibrate=False):
         a = reg.intercept_
         b = reg.coef_[0]
         y_pred_corr = a + b * y_pred
-        print("[hiepdebug] calibrating mnbe...")
         mnbe = np.nanmean((yt_nonzero - y_pred_corr) / yt_nonzero) * 100.0
-        print("[hiepdebug]  y_pred...")
-        display(y_pred)
-        print("[hiepdebug]  y_pred_corr...")
-        display(y_pred_corr)
     else:
         mnbe = np.nanmean((yt_nonzero - y_pred) / yt_nonzero) * 100.0
 
@@ -252,7 +288,7 @@ def train_lgbm_for_horizon(df_feat,
     rows = []
     for sid, grp in df_test_res.groupby("station_id"):
         m = compute_metrics(grp["y_true"], grp["y_pred"], calibrate)
-        print(f"sid = {sid}, grp = {grp}")
+        #print(f"sid = {sid}, grp = {grp}")
 
         # Calculate avg mnbe
         avg_mnbe = mnbe_avg(grp["y_true"], grp["y_pred"], grp["date"])
