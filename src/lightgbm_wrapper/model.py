@@ -302,6 +302,24 @@ def train_lgbm_for_horizon(df_feat,
     )
 
 # ==========================================================================================
+
+def plot_prediction(y_true, y_pred, meta, target_col, title, index_col="date", n_points=300, path=None):
+    X_plot = meta.iloc[-n_points:]
+    y_true_plot = y_true.iloc[-n_points:]
+    y_pred_plot = y_pred[-n_points:]
+
+    plt.figure(figsize=(14, 5))
+    plt.plot(X_plot[index_col], y_true_plot, label=f"Actual {target_col}", linewidth=1.5)
+    plt.plot(X_plot[index_col], y_pred_plot, label=f"Predicted {target_col}", linestyle="--")
+    plt.title(title)
+    plt.xlabel("Time")
+    plt.ylabel(f"{target_col} (µg/m³)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    if path:
+        plt.savefig(path)
+    plt.show()
     
 def plot_timeseries_example(df, model, horizon_h, station_id, target_col, n_points=300, LIGHTGBM_DIR="."):
     # Prepare data for reference
@@ -326,22 +344,9 @@ def plot_timeseries_example(df, model, horizon_h, station_id, target_col, n_poin
     # Prediction
     y_pred_sid = model.predict(X_test_sid, num_iteration=getattr(model, "best_iteration", None))
     print(f"y_pred_sid.shape: {y_pred_sid.shape}")
-    
-    # Plotting
-    X_plot = meta_sid.iloc[-n_points:]
-    y_true_plot = y_test_sid.iloc[-n_points:]
-    y_pred_plot = y_pred_sid[-n_points:]
 
-    plt.figure(figsize=(14, 5))
-    plt.plot(X_plot["date"], y_true_plot, label=f"Actual {target_col}", linewidth=1.5)
-    plt.plot(X_plot["date"], y_pred_plot, label=f"Predicted {target_col}", linestyle="--")
-    #plt.plot(X_plot.index, y_true_plot, label=f"Actual {target_col}", linewidth=1.5)
-    #plt.plot(X_plot.index, y_pred_plot, label=f"Predicted {target_col} (LightGBM)", linestyle="--")
-    plt.title(f"Station {station_id} - Horizon {horizon_h}h")
-    plt.xlabel("Time")
-    plt.ylabel(f"{target_col} (µg/m³)")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(os.path.join(LIGHTGBM_DIR, f"{target_col}_lightgbm_{horizon_h}h_{station_id}_{n_points}.png"))
-    plt.show()
+    # Plotting
+    plot_prediction(y_test_sid, y_pred_sid, meta_sid, target_col, \
+                    title=f"Station {station_id} - Horizon {horizon_h}h", \
+                    path=os.path.join(LIGHTGBM_DIR, f"{target_col}_lightgbm_{horizon_h}h_{station_id}_{n_points}.png"))
+
